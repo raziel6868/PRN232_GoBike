@@ -67,6 +67,11 @@ public class RentalContractService : IRentalContractService
         await using var transaction = await context.Database.BeginTransactionAsync();
         var (customer, motorcycle) = await LoadAndValidateContractPartiesAsync(request.CustomerId, request.MotorcycleId);
         ValidateMotorcycleAvailable(motorcycle);
+        ValidateMileageNotDecreased(
+            request.BeforeInspection.Mileage,
+            motorcycle.Mileage,
+            "Start mileage",
+            "the motorcycle's current mileage");
 
         var contract = CreateBaseContract(request.CustomerId, request.MotorcycleId, request.StartDate, request.EndDate, motorcycle, userId);
         contract.Status = RentalStatus.Active;
@@ -107,6 +112,12 @@ public class RentalContractService : IRentalContractService
         if (contract.Inspections.Any(i => i.InspectionType == InspectionType.BeforeRental))
             throw new InvalidOperationException("BeforeRental inspection already exists");
 
+        ValidateMileageNotDecreased(
+            request.BeforeInspection.Mileage,
+            contract.Motorcycle.Mileage,
+            "Start mileage",
+            "the motorcycle's current mileage");
+
         if (!contract.Payments.Any(p => p.PaymentType == PaymentType.Deposit))
             throw new InvalidOperationException("Deposit payment is required before handover");
 
@@ -137,11 +148,18 @@ public class RentalContractService : IRentalContractService
         if (contract.Status != RentalStatus.Active)
             throw new InvalidOperationException("Only active contracts can be completed");
 
-        if (!contract.Inspections.Any(i => i.InspectionType == InspectionType.BeforeRental))
-            throw new InvalidOperationException("BeforeRental inspection is required before completing a contract");
+        var beforeRentalInspection = contract.Inspections
+            .FirstOrDefault(i => i.InspectionType == InspectionType.BeforeRental)
+            ?? throw new InvalidOperationException("BeforeRental inspection is required before completing a contract");
 
         if (contract.Inspections.Any(i => i.InspectionType == InspectionType.AfterReturn))
             throw new InvalidOperationException("AfterReturn inspection already exists");
+
+        ValidateMileageNotDecreased(
+            request.AfterInspection.Mileage,
+            beforeRentalInspection.Mileage,
+            "Return mileage",
+            "start mileage");
 
         if (request.ActualReturnDate.Date < contract.StartDate.Date)
             throw new InvalidOperationException("ActualReturnDate cannot be before StartDate");
@@ -475,6 +493,12 @@ public class RentalContractService : IRentalContractService
 
         if (request.HasDamage && string.IsNullOrWhiteSpace(request.DamageDescription))
             throw new InvalidOperationException("DamageDescription is required when inspection has damage");
+    }
+
+    private static void ValidateMileageNotDecreased(int mileage, int minimumMileage, string fieldName, string referenceName)
+    {
+        if (mileage < minimumMileage)
+            throw new InvalidOperationException($"{fieldName} cannot be lower than {referenceName} ({minimumMileage} km)");
     }
 
     private static void ValidateCompleteRequest(CompleteRentalRequestDto request)
