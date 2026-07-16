@@ -52,6 +52,10 @@ public class ReserveRentalRequestDto
     [MaxLength(500)]
     public string? DepositPaymentNote { get; set; }
 
+    [Required]
+    [MaxLength(500)]
+    public string DepositProofImageUrl { get; set; } = string.Empty;
+
     [MaxLength(500)]
     public string? Notes { get; set; }
 }

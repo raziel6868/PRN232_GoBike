@@ -5,6 +5,7 @@ using BusinessObjects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using WebUI.Helpers;
 
 namespace WebUI.Pages.Rentals;
 
@@ -12,10 +13,12 @@ namespace WebUI.Pages.Rentals;
 public class RentNowModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IWebHostEnvironment _environment;
 
-    public RentNowModel(IHttpClientFactory httpClientFactory)
+    public RentNowModel(IHttpClientFactory httpClientFactory, IWebHostEnvironment environment)
     {
         _httpClientFactory = httpClientFactory;
+        _environment = environment;
     }
 
     [BindProperty]
@@ -36,7 +39,7 @@ public class RentNowModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(IFormFile? depositProofImage)
     {
         Form.RentalDate = SystemClock.Today;
 
@@ -70,6 +73,14 @@ public class RentNowModel : PageModel
             return Page();
         }
 
+        var (depositProofImageUrl, proofImageError) = await DepositProofImageHelper.SaveAsync(_environment, depositProofImage);
+        if (proofImageError != null)
+        {
+            ModelState.AddModelError("depositProofImage", proofImageError);
+            await LoadOptionsAsync();
+            return Page();
+        }
+
         var payload = new
         {
             customerId = Form.CustomerId,
@@ -79,6 +90,7 @@ public class RentNowModel : PageModel
             depositConfirmed = Form.DepositConfirmed,
             depositPaymentMethod = Form.DepositPaymentMethod,
             depositPaymentNote = Form.DepositPaymentNote,
+            depositProofImageUrl,
             notes = Form.Notes,
             beforeInspection = new
             {

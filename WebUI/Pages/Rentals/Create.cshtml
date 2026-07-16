@@ -15,7 +15,7 @@
 
 <div class="content-card">
     <div class="card-body">
-        <form method="post" novalidate>
+        <form method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
             <div class="row">
@@ -90,6 +90,16 @@
                         <label class="form-label fw-bold" for="DepositPaymentNote">Deposit Payment Note</label>
                         <input class="form-control" id="DepositPaymentNote" asp-for="Form.DepositPaymentNote"
                                placeholder="Receipt code, transfer note..." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" for="DepositProofImage">
+                            Deposit Proof Image <span style="color: #EF4444;">*</span>
+                        </label>
+                        <input class="form-control" id="DepositProofImage" name="depositProofImage" type="file"
+                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required />
+                        <div class="form-text">Upload the deposit receipt or transfer confirmation. JPG, PNG, or WEBP up to 5 MB.</div>
+                        <span class="text-danger">@ViewData.ModelState["depositProofImage"]?.Errors.FirstOrDefault()?.ErrorMessage</span>
                     </div>
 
                     <div class="form-check mb-3">

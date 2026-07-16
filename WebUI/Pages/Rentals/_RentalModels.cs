@@ -61,6 +61,7 @@ public class RentalPaymentView
     public decimal Amount { get; set; }
     public string PaymentMethod { get; set; } = "";
     public string? Note { get; set; }
+    public string? ProofImageUrl { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

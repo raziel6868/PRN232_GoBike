@@ -6,6 +6,7 @@ using BusinessObjects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using WebUI.Helpers;
 
 namespace WebUI.Pages.Rentals;
 
@@ -13,10 +14,12 @@ namespace WebUI.Pages.Rentals;
 public class CreateModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IWebHostEnvironment _environment;
 
-    public CreateModel(IHttpClientFactory httpClientFactory)
+    public CreateModel(IHttpClientFactory httpClientFactory, IWebHostEnvironment environment)
     {
         _httpClientFactory = httpClientFactory;
+        _environment = environment;
     }
 
     [BindProperty]
@@ -51,7 +54,7 @@ public class CreateModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(IFormFile? depositProofImage)
     {
         if (!ModelState.IsValid)
         {
@@ -88,6 +91,13 @@ public class CreateModel : PageModel
             return await OnGetAsync();
         }
 
+        var (depositProofImageUrl, proofImageError) = await DepositProofImageHelper.SaveAsync(_environment, depositProofImage);
+        if (proofImageError != null)
+        {
+            ModelState.AddModelError("depositProofImage", proofImageError);
+            return await OnGetAsync();
+        }
+
         var payload = new
         {
             customerId = Form.CustomerId,
@@ -97,6 +107,7 @@ public class CreateModel : PageModel
             depositConfirmed = Form.DepositConfirmed,
             depositPaymentMethod = Form.DepositPaymentMethod,
             depositPaymentNote = Form.DepositPaymentNote,
+            depositProofImageUrl,
             notes = Form.Notes
         };
 

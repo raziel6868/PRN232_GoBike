@@ -221,6 +221,7 @@ public class RentalContractController : ControllerBase
                 Amount = p.Amount,
                 PaymentMethod = p.PaymentMethod.ToString(),
                 Note = p.Note,
+                ProofImageUrl = p.ProofImageUrl,
                 CreatedAt = p.CreatedAt
             }).ToList()
     };

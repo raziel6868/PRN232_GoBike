@@ -82,5 +82,6 @@ public class RentalPaymentDto
     public decimal Amount { get; set; }
     public string PaymentMethod { get; set; } = string.Empty;
     public string? Note { get; set; }
+    public string? ProofImageUrl { get; set; }
     public DateTime CreatedAt { get; set; }
 }

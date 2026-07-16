@@ -153,6 +153,10 @@
                                             {
                                                 <div class="text-muted small">@payment.Note</div>
                                             }
+                                            @if (!string.IsNullOrWhiteSpace(payment.ProofImageUrl))
+                                            {
+                                                <a class="small" href="@payment.ProofImageUrl" target="_blank" rel="noopener">View proof image</a>
+                                            }
                                         </td>
                                         <td>@payment.PaymentMethod</td>
                                         <td>@payment.Amount.ToString("N0") VND</td>

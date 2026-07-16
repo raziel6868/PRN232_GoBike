@@ -30,6 +30,7 @@ public class RentalContractService : IRentalContractService
     public async Task<RentalContract> ReserveAsync(ReserveRentalRequestDto request, int? userId)
     {
         ValidateDepositConfirmation(request.DepositConfirmed);
+        ValidateDepositProofImage(request.DepositProofImageUrl);
         ValidatePaymentMethod(request.DepositPaymentMethod, nameof(request.DepositPaymentMethod));
         ValidateDateRange(request.StartDate, request.EndDate);
         ValidateReservationStartDate(request.StartDate);
@@ -49,7 +50,14 @@ public class RentalContractService : IRentalContractService
         context.RentalContracts.Add(contract);
         await context.SaveChangesAsync();
 
-        context.RentalPayments.Add(CreatePayment(contract.Id, PaymentType.Deposit, contract.DepositAmount, request.DepositPaymentMethod, request.DepositPaymentNote, userId));
+        context.RentalPayments.Add(CreatePayment(
+            contract.Id,
+            PaymentType.Deposit,
+            contract.DepositAmount,
+            request.DepositPaymentMethod,
+            request.DepositPaymentNote,
+            userId,
+            request.DepositProofImageUrl));
         await context.SaveChangesAsync();
         await transaction.CommitAsync();
 
@@ -59,6 +67,7 @@ public class RentalContractService : IRentalContractService
     public async Task<RentalContract> RentNowAsync(RentNowRequestDto request, int? userId)
     {
         ValidateDepositConfirmation(request.DepositConfirmed);
+        ValidateDepositProofImage(request.DepositProofImageUrl);
         ValidatePaymentMethod(request.DepositPaymentMethod, nameof(request.DepositPaymentMethod));
         ValidateDateRange(request.StartDate, request.EndDate);
         ValidateRentNowStartDate(request.StartDate);
@@ -85,7 +94,14 @@ public class RentalContractService : IRentalContractService
         await context.SaveChangesAsync();
 
         context.RentalInspections.Add(CreateInspection(contract.Id, InspectionType.BeforeRental, request.BeforeInspection, userId));
-        context.RentalPayments.Add(CreatePayment(contract.Id, PaymentType.Deposit, contract.DepositAmount, request.DepositPaymentMethod, request.DepositPaymentNote, userId));
+        context.RentalPayments.Add(CreatePayment(
+            contract.Id,
+            PaymentType.Deposit,
+            contract.DepositAmount,
+            request.DepositPaymentMethod,
+            request.DepositPaymentNote,
+            userId,
+            request.DepositProofImageUrl));
         await context.SaveChangesAsync();
         await transaction.CommitAsync();
 
@@ -395,7 +411,14 @@ public class RentalContractService : IRentalContractService
             CreatedAt = SystemClock.Now
         };
 
-    private static RentalPayment CreatePayment(int contractId, PaymentType type, decimal amount, PaymentMethod method, string? note, int? userId)
+    private static RentalPayment CreatePayment(
+        int contractId,
+        PaymentType type,
+        decimal amount,
+        PaymentMethod method,
+        string? note,
+        int? userId,
+        string? proofImageUrl = null)
         => new()
         {
             RentalContractId = contractId,
@@ -403,6 +426,7 @@ public class RentalContractService : IRentalContractService
             Amount = amount,
             PaymentMethod = method,
             Note = note?.Trim(),
+            ProofImageUrl = proofImageUrl?.Trim(),
             CreatedByUserId = userId,
             CreatedAt = SystemClock.Now
         };
@@ -448,6 +472,15 @@ public class RentalContractService : IRentalContractService
     {
         if (!depositConfirmed)
             throw new InvalidOperationException("Deposit must be collected before creating or activating a contract");
+    }
+
+    private static void ValidateDepositProofImage(string? proofImageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(proofImageUrl))
+            throw new InvalidOperationException("Deposit proof image is required before creating a contract");
+
+        if (!proofImageUrl.StartsWith("/uploads/rental-deposits/", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Deposit proof image must be uploaded through the rental form");
     }
 
     private static void ValidateMotorcycleAvailable(Motorcycle motorcycle)

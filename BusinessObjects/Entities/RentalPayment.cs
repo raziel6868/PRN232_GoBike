@@ -22,6 +22,9 @@ public class RentalPayment
     [MaxLength(500)]
     public string? Note { get; set; }
 
+    [MaxLength(500)]
+    public string? ProofImageUrl { get; set; }
+
     public int? CreatedByUserId { get; set; }
 
     public DateTime CreatedAt { get; set; } = SystemClock.Now;
