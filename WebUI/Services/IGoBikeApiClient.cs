@@ -28,4 +28,12 @@ public interface IGoBikeApiClient
     Task<(bool Success, MotorcycleDto? Motorcycle, string? Error)> UpdateMotorcycleAsync(int id, UpdateMotorcycleRequest request);
     Task<(bool Success, string? Error)> DeleteMotorcycleAsync(int id);
     Task<(bool Success, List<MotorcycleTypeDto>? Types, string? Error)> GetMotorcycleTypesAsync();
+
+    Task<(bool Success, PaginatedResult<MaintenanceRecordDto>? Result, string? Error)> GetMaintenanceRecordsAsync(
+        int? motorcycleId,
+        MaintenanceStatus? status,
+        int pageNumber,
+        int pageSize = 10);
+    Task<(bool Success, MaintenanceRecordDto? Record, string? Error)> CreateMaintenanceRecordAsync(
+        MaintenanceRecordCreateDto request);
 }

@@ -73,7 +73,7 @@ public class CompleteModel : PageModel
         if (!await LoadRentalAsync(id)) return NotFound();
 
         ActualReturnDate = SystemClock.Today;
-        EndMileage = Rental.EndMileage ?? Rental.MotorcycleMileage ?? Rental.StartMileage ?? 0;
+        EndMileage = Rental.StartMileage ?? Rental.MotorcycleMileage ?? Rental.EndMileage ?? 0;
         FuelLevel = "Full";
         VehicleCondition = "Good";
         return Page();
@@ -81,59 +81,61 @@ public class CompleteModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
+        if (!await LoadRentalAsync(id)) return NotFound();
+
         if (EndMileage < 0)
         {
             ModelState.AddModelError(nameof(EndMileage), "End mileage must be 0 or greater.");
-            await LoadRentalAsync(id);
+            return Page();
+        }
+
+        if (Rental.StartMileage.HasValue && EndMileage < Rental.StartMileage.Value)
+        {
+            ModelState.AddModelError(
+                nameof(EndMileage),
+                $"End mileage must be at least the start mileage ({Rental.StartMileage.Value} km).");
             return Page();
         }
 
         if (ActualReturnDate == default)
         {
             ModelState.AddModelError(nameof(ActualReturnDate), "Actual return date is required.");
-            await LoadRentalAsync(id);
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(FuelLevel))
         {
             ModelState.AddModelError(nameof(FuelLevel), "Fuel level is required.");
-            await LoadRentalAsync(id);
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(VehicleCondition))
         {
             ModelState.AddModelError(nameof(VehicleCondition), "Vehicle condition is required.");
-            await LoadRentalAsync(id);
             return Page();
         }
 
         if ((HasDamage || DamageFee > 0) && string.IsNullOrWhiteSpace(DamageDescription))
         {
             ModelState.AddModelError(nameof(DamageDescription), "Damage description is required when damage is reported.");
-            await LoadRentalAsync(id);
             return Page();
         }
 
         if (OtherFee > 0 && string.IsNullOrWhiteSpace(OtherFeeDescription))
         {
             ModelState.AddModelError(nameof(OtherFeeDescription), "Other fee description is required when other fee is greater than zero.");
-            await LoadRentalAsync(id);
             return Page();
         }
 
         if (DiscountAmount > 0 && string.IsNullOrWhiteSpace(DiscountReason))
         {
             ModelState.AddModelError(nameof(DiscountReason), "Discount reason is required when discount is greater than zero.");
-            await LoadRentalAsync(id);
             return Page();
         }
 
         if (DamageFee < 0 || OtherFee < 0 || DiscountAmount < 0)
         {
             ModelState.AddModelError(string.Empty, "Fees and discount must be 0 or greater.");
-            await LoadRentalAsync(id);
             return Page();
         }
 
@@ -167,7 +169,6 @@ public class CompleteModel : PageModel
         if (!response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorMessageAsync(response, "Failed to complete rental contract.");
-            await LoadRentalAsync(id);
             return Page();
         }
 

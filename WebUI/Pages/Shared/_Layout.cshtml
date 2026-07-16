@@ -51,6 +51,9 @@
                                 <li class="nav-item">
                                     <a class="nav-link @(currentPath.StartsWith("/admin/staff") ? "active" : "")" href="/Admin/Staff">Staff</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @(currentPath.StartsWith("/admin/maintenance") ? "active" : "")" href="/Admin/Maintenance">Maintenance</a>
+                                </li>
                             }
                             @if (isAdmin || isStaff)
                             {

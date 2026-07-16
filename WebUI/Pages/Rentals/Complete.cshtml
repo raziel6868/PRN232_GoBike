@@ -2,6 +2,7 @@
 @model WebUI.Pages.Rentals.CompleteModel
 @{
     ViewData["Title"] = "Rentals / Complete";
+    var minimumEndMileage = Model.Rental.StartMileage ?? Model.Rental.MotorcycleMileage ?? 0;
 }
 
 <div class="page-heading">
@@ -50,7 +51,8 @@
                         <label class="form-label fw-bold" for="EndMileage">
                             End Mileage (km) <span style="color: #EF4444;">*</span>
                         </label>
-                        <input class="form-control" id="EndMileage" type="number" min="0" asp-for="EndMileage" oninput="estimateFinalAmount()" />
+                        <input class="form-control" id="EndMileage" type="number" min="@minimumEndMileage" asp-for="EndMileage" oninput="estimateFinalAmount()" />
+                        <div class="form-text text-muted">Minimum: @minimumEndMileage.ToString("N0") km (start mileage)</div>
                         <span asp-validation-for="EndMileage" class="text-danger"></span>
                     </div>
                 </div>

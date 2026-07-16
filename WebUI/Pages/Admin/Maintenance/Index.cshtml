@@ -1,0 +1,198 @@
+@page
+@model WebUI.Pages.Admin.Maintenance.IndexModel
+@using BusinessObjects
+@using BusinessObjects.Enums
+@{
+    ViewData["Title"] = "Maintenance Records";
+}
+
+<div class="page-heading">
+    <div>
+        <div class="page-kicker">Fleet operations</div>
+        <h1>Maintenance Records</h1>
+        <p class="page-subtitle">Create and track manual maintenance work for the fleet.</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMaintenanceModal"
+            disabled="@(Model.EligibleMotorcycles.Count == 0)">
+        Create maintenance record
+    </button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+<form method="get" class="filter-panel mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" for="MotorcycleId">Motorcycle</label>
+            <select class="form-select" id="MotorcycleId" name="MotorcycleId">
+                <option value="">All motorcycles</option>
+                @foreach (var motorcycle in Model.EligibleMotorcycles)
+                {
+                    <option value="@motorcycle.Id" selected="@(Model.MotorcycleId == motorcycle.Id)">
+                        @motorcycle.LicensePlate - @motorcycle.Brand @motorcycle.Model
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="Status">Status</label>
+            <select class="form-select" id="Status" name="Status">
+                <option value="">All statuses</option>
+                @foreach (var status in Enum.GetValues<MaintenanceStatus>())
+                {
+                    <option value="@status" selected="@(Model.Status == status)">@status</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-5 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Apply filters</button>
+            <a asp-page="./Index" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </div>
+</form>
+
+@if (Model.Result.Items.Count == 0)
+{
+    <div class="empty-state">
+        <strong>No maintenance records found.</strong>
+        <div>Create a record when a motorcycle needs inspection, repair, or servicing.</div>
+    </div>
+}
+else
+{
+    <div class="data-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Motorcycle</th>
+                        <th>Reason</th>
+                        <th>Start date</th>
+                        <th>Repair cost</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var record in Model.Result.Items)
+                    {
+                        <tr>
+                            <td class="text-muted">#@record.Id</td>
+                            <td><strong>@record.MotorcycleLicensePlate</strong></td>
+                            <td>
+                                <div>@record.Reason</div>
+                                @if (!string.IsNullOrWhiteSpace(record.Description))
+                                {
+                                    <div class="small text-muted">@record.Description</div>
+                                }
+                            </td>
+                            <td>@record.StartDate.ToString("dd/MM/yyyy")</td>
+                            <td>@record.RepairCost.ToString("N0") VND</td>
+                            <td><span class="badge @WebUI.Pages.Admin.Maintenance.IndexModel.GetStatusBadgeClass(record.Status)">@record.Status</span></td>
+                            <td class="text-end">
+                                <a asp-page="/Motorcycle/Details" asp-route-id="@record.MotorcycleId" class="btn btn-sm btn-outline-primary">Motorcycle</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Model.Result.TotalPages > 1)
+{
+    <nav class="mt-4" aria-label="Maintenance record pages">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(Model.Result.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber - 1)"
+                   asp-route-motorcycleId="@Model.MotorcycleId" asp-route-status="@Model.Status">Previous</a>
+            </li>
+            @for (var pageIndex = 1; pageIndex <= Model.Result.TotalPages; pageIndex++)
+            {
+                <li class="page-item @(pageIndex == Model.PageNumber ? "active" : "")">
+                    <a class="page-link" asp-page="./Index" asp-route-page="@pageIndex"
+                       asp-route-motorcycleId="@Model.MotorcycleId" asp-route-status="@Model.Status">@pageIndex</a>
+                </li>
+            }
+            <li class="page-item @(Model.Result.HasNextPage ? "" : "disabled")">
+                <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber + 1)"
+                   asp-route-motorcycleId="@Model.MotorcycleId" asp-route-status="@Model.Status">Next</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+<div class="modal fade" id="createMaintenanceModal" tabindex="-1" aria-labelledby="createMaintenanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" asp-page-handler="Create" class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="createMaintenanceModalLabel">Create Maintenance Record</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label" for="createMotorcycleId">Motorcycle <span class="text-danger">*</span></label>
+                        <select class="form-select" id="createMotorcycleId" name="MotorcycleId" required>
+                            <option value="">Select a motorcycle</option>
+                            @foreach (var motorcycle in Model.EligibleMotorcycles)
+                            {
+                                <option value="@motorcycle.Id">
+                                    @motorcycle.LicensePlate - @motorcycle.Brand @motorcycle.Model - @motorcycle.Mileage.ToString("N0") km (@motorcycle.Status)
+                                </option>
+                            }
+                        </select>
+                        <div class="form-text">Only available and already-maintained motorcycles can be selected.</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label" for="Reason">Reason <span class="text-danger">*</span></label>
+                        <input class="form-control" id="Reason" name="Reason" maxlength="200" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="createStatus">Initial status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="createStatus" name="Status">
+                            <option value="@MaintenanceStatus.Pending">Pending</option>
+                            <option value="@MaintenanceStatus.InProgress">In Progress</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="StartDate">Start date</label>
+                        <input class="form-control" id="StartDate" name="StartDate" type="date"
+                               value="@SystemClock.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="RepairCost">Repair cost (VND)</label>
+                        <input class="form-control" id="RepairCost" name="RepairCost" type="number" min="0" step="1000" value="0" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="Description">Description</label>
+                        <textarea class="form-control" id="Description" name="Description" rows="4" maxlength="1000"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create record</button>
+            </div>
+        </form>
+    </div>
+</div>

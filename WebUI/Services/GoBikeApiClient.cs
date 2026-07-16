@@ -184,6 +184,29 @@ public class GoBikeApiClient : IGoBikeApiClient
         return await ReadAsync<List<MotorcycleTypeDto>>(response);
     }
 
+    public async Task<(bool Success, PaginatedResult<MaintenanceRecordDto>? Result, string? Error)> GetMaintenanceRecordsAsync(
+        int? motorcycleId,
+        MaintenanceStatus? status,
+        int pageNumber,
+        int pageSize = 10)
+    {
+        var query = $"api/maintenance-records?page={pageNumber}&pageSize={pageSize}";
+        if (motorcycleId.HasValue)
+            query += $"&motorcycleId={motorcycleId.Value}";
+        if (status.HasValue)
+            query += $"&status={status.Value}";
+
+        var response = await httpClient.GetAsync(query);
+        return await ReadAsync<PaginatedResult<MaintenanceRecordDto>>(response);
+    }
+
+    public async Task<(bool Success, MaintenanceRecordDto? Record, string? Error)> CreateMaintenanceRecordAsync(
+        MaintenanceRecordCreateDto request)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/maintenance-records", request, JsonOptions);
+        return await ReadAsync<MaintenanceRecordDto>(response);
+    }
+
     private async Task<(bool Success, MotorcycleDetailDto? Motorcycle, string? Error)> ReadMotorcycleDetailAsync(int id)
     {
         var response = await httpClient.GetAsync($"api/motorcycles/{id}");
