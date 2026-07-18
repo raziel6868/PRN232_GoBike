@@ -1,5 +1,6 @@
 ﻿using BusinessObjects.Entities;
 using DataAccessObjects;
+using API.Integrations;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,19 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IRentalContractService, RentalContractService>();
 builder.Services.AddScoped<IMaintenanceRecordService, MaintenanceRecordService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+
+builder.Services.Configure<OpenRouteServiceOptions>(
+    builder.Configuration.GetSection(OpenRouteServiceOptions.SectionName));
+builder.Services.Configure<OllamaOptions>(
+    builder.Configuration.GetSection(OllamaOptions.SectionName));
+builder.Services.AddHttpClient<IOpenRouteService, OpenRouteService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
+});
+builder.Services.AddHttpClient<IPlaceIntentService, OllamaPlaceIntentService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(180);
+});
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

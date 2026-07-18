@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/WebUI.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <div class="app-shell">
@@ -65,6 +66,9 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link @(currentPath.StartsWith("/rentals") ? "active" : "")" href="/Rentals">Rentals</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @(currentPath.StartsWith("/routes") ? "active" : "")" href="/Routes">Route Planner</a>
                                 </li>
                             }
                             @if (User.Identity?.IsAuthenticated == true)

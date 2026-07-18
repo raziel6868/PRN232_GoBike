@@ -209,6 +209,26 @@ public class GoBikeApiClient : IGoBikeApiClient
         return await ReadAsync<MaintenanceRecordDto>(response);
     }
 
+    public async Task<(bool Success, List<PlaceSuggestionDto>? Places, string? Error)> SearchPlacesAsync(string query)
+    {
+        var response = await httpClient.GetAsync($"api/routes/search?query={Uri.EscapeDataString(query)}");
+        return await ReadAsync<List<PlaceSuggestionDto>>(response);
+    }
+
+    public async Task<(bool Success, RouteAssistantResponseDto? Response, string? Error)> AskRouteAssistantAsync(
+        RouteAssistantRequestDto request)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/routes/assistant", request, JsonOptions);
+        return await ReadAsync<RouteAssistantResponseDto>(response);
+    }
+
+    public async Task<(bool Success, RouteResultDto? Route, string? Error)> ComputeRouteAsync(
+        ComputeRouteRequestDto request)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/routes/compute", request, JsonOptions);
+        return await ReadAsync<RouteResultDto>(response);
+    }
+
     private async Task<(bool Success, MotorcycleDetailDto? Motorcycle, string? Error)> ReadMotorcycleDetailAsync(int id)
     {
         var response = await httpClient.GetAsync($"api/motorcycles/{id}");

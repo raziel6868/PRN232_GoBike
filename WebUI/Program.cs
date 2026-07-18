@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using WebUI.Configuration;
 using WebUI.Extensions;
 using WebUI.Services;
 
@@ -17,6 +18,8 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddGoBikeApiClient(builder.Configuration, builder.Environment);
+builder.Services.Configure<MapTilerSettings>(
+    builder.Configuration.GetSection(MapTilerSettings.SectionName));
 
 builder.Services.AddRazorPages(options =>
 {
@@ -24,6 +27,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Motorcycle", "AdminOrStaff");
     options.Conventions.AuthorizeFolder("/Customers", "AdminOrStaff");
     options.Conventions.AuthorizeFolder("/Rentals", "AdminOrStaff");
+    options.Conventions.AuthorizeFolder("/Routes", "AdminOrStaff");
 });
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

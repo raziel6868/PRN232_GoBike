@@ -1,0 +1,150 @@
+@page
+@model WebUI.Pages.Routes.IndexModel
+@{
+    ViewData["Title"] = "Route Planner";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="~/css/route-planner.css" asp-append-version="true" />
+}
+
+<div class="page-heading route-page-heading">
+    <div>
+        <div class="page-kicker">Trip operations</div>
+        <h1>Route Planner</h1>
+        <p class="page-subtitle">Plan motorcycle trips across Vietnam.</p>
+    </div>
+    <span class="route-mode-badge">Motorcycle route</span>
+</div>
+
+<div id="route-planner"
+     class="route-workspace"
+     data-search-url="@Url.Page("./Index", "Search")"
+     data-compute-url="@Url.Page("./Index", "Compute")"
+     data-assistant-url="@Url.Page("./Index", "Assistant")"
+     data-map-style-url="@Model.MapStyleUrl">
+    <aside class="route-sidebar" aria-label="Route controls">
+        <form id="route-form" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="route-field" data-location-field="origin">
+                <div class="route-field-heading">
+                    <label for="origin-input" class="form-label">Origin</label>
+                    <button type="button" id="use-location" class="btn btn-sm btn-link route-link-button">
+                        Current location
+                    </button>
+                </div>
+                <div class="route-input-wrap">
+                    <span class="route-point-indicator origin" aria-hidden="true"></span>
+                    <input id="origin-input" class="form-control route-location-input" type="search"
+                           autocomplete="off" placeholder="Search starting point" />
+                    <div class="route-suggestions" role="listbox" hidden></div>
+                </div>
+            </div>
+
+            <div class="route-swap-row">
+                <button type="button" id="swap-locations" class="btn btn-sm btn-outline-secondary">Swap</button>
+            </div>
+
+            <div class="route-field" data-location-field="destination">
+                <label for="destination-input" class="form-label">Destination</label>
+                <div class="route-input-wrap">
+                    <span class="route-point-indicator destination" aria-hidden="true"></span>
+                    <input id="destination-input" class="form-control route-location-input" type="search"
+                           autocomplete="off" placeholder="Search destination" />
+                    <div class="route-suggestions" role="listbox" hidden></div>
+                </div>
+            </div>
+
+            <fieldset class="route-options">
+                <legend>Route preferences</legend>
+                <label class="route-toggle">
+                    <input id="avoid-highways" class="form-check-input" type="checkbox" />
+                    <span>Avoid highways</span>
+                </label>
+                <label class="route-toggle">
+                    <input id="avoid-tolls" class="form-check-input" type="checkbox" />
+                    <span>Avoid tolls</span>
+                </label>
+                <label class="route-toggle">
+                    <input id="avoid-ferries" class="form-check-input" type="checkbox" />
+                    <span>Avoid ferries</span>
+                </label>
+            </fieldset>
+
+            <button id="compute-route" type="submit" class="btn btn-primary w-100" disabled>
+                Find route
+            </button>
+        </form>
+
+        <div id="route-error" class="route-error" role="alert" hidden></div>
+
+        <section id="route-result" class="route-result" aria-live="polite" hidden>
+            <div class="route-summary">
+                <div>
+                    <span>Distance</span>
+                    <strong id="route-distance">--</strong>
+                </div>
+                <div>
+                    <span>Estimated time</span>
+                    <strong id="route-duration">--</strong>
+                </div>
+            </div>
+            <a id="open-navigation" class="btn btn-outline-primary w-100" target="_blank" rel="noopener">
+                Open navigation
+            </a>
+            <div class="route-step-heading">
+                <h2>Directions</h2>
+                <span id="route-step-count"></span>
+            </div>
+            <ol id="route-steps" class="route-steps"></ol>
+        </section>
+    </aside>
+
+    <section class="route-map-shell" aria-label="Interactive route map">
+        <div id="route-map"></div>
+        <div id="map-mode" class="map-mode-status">Set origin</div>
+        <div id="map-loading" class="map-loading" hidden>
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span>Calculating route</span>
+        </div>
+
+        <button id="route-assistant-toggle" class="route-assistant-toggle" type="button"
+                aria-controls="route-assistant" aria-expanded="false">
+            <span class="route-assistant-mark" aria-hidden="true">AI</span>
+            <span>Ask assistant</span>
+        </button>
+
+        <aside id="route-assistant" class="route-assistant" role="dialog"
+               aria-labelledby="route-assistant-title" hidden>
+            <header class="route-assistant-header">
+                <span class="route-assistant-mark" aria-hidden="true">AI</span>
+                <div>
+                    <h2 id="route-assistant-title">Route assistant</h2>
+                    <span>Nearby place search</span>
+                </div>
+                <button id="route-assistant-close" type="button" class="btn-close"
+                        aria-label="Close assistant"></button>
+            </header>
+
+            <div id="route-assistant-messages" class="route-assistant-messages" aria-live="polite">
+                <div class="route-chat-message assistant">
+                    Tell me what you need nearby. You can write in Vietnamese or English.
+                </div>
+            </div>
+
+            <form id="route-assistant-form" class="route-assistant-form">
+                <label class="visually-hidden" for="route-assistant-input">Ask about nearby places</label>
+                <textarea id="route-assistant-input" rows="2" maxlength="500" required
+                          placeholder="E.g. Tìm quán ăn đồ Việt gần nhất"></textarea>
+                <button id="route-assistant-send" type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </aside>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.js"></script>
+    <script src="~/js/route-planner.js" asp-append-version="true"></script>
+}

@@ -36,4 +36,9 @@ public interface IGoBikeApiClient
         int pageSize = 10);
     Task<(bool Success, MaintenanceRecordDto? Record, string? Error)> CreateMaintenanceRecordAsync(
         MaintenanceRecordCreateDto request);
+
+    Task<(bool Success, List<PlaceSuggestionDto>? Places, string? Error)> SearchPlacesAsync(string query);
+    Task<(bool Success, RouteAssistantResponseDto? Response, string? Error)> AskRouteAssistantAsync(
+        RouteAssistantRequestDto request);
+    Task<(bool Success, RouteResultDto? Route, string? Error)> ComputeRouteAsync(ComputeRouteRequestDto request);
 }
