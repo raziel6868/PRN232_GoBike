@@ -143,6 +143,8 @@ public class RentalContractController : ControllerBase
     private static RentalContractListDto MapListDto(RentalContract x) => new()
     {
         Id = x.Id,
+        CustomerId = x.CustomerId,
+        MotorcycleId = x.MotorcycleId,
         CustomerFullName = x.Customer?.FullName,
         MotorcycleLicensePlate = x.Motorcycle?.LicensePlate,
         RentalDate = x.StartDate,

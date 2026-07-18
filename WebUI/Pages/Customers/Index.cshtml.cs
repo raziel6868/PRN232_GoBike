@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using WebUI.Services;
 
 namespace WebUI.Pages.Customers;
 
@@ -26,8 +27,12 @@ public class IndexModel : PageModel
         SearchQuery = search;
         CurrentPage = page < 1 ? 1 : page;
 
+        var filters = new List<string>();
+        if (!string.IsNullOrWhiteSpace(search))
+            filters.Add(ODataQuery.ContainsAny(search, "FullName", "CCCD", "PhoneNumber"));
+
         var client = _httpClientFactory.CreateClient("GobikeApi");
-        var url = $"/api/customer?search={Uri.EscapeDataString(search ?? "")}&page={CurrentPage}&pageSize=10";
+        var url = ODataQuery.BuildCollectionUrl("Customers", filters, "CreatedAt desc", CurrentPage, 10);
 
         var response = await client.GetAsync(url);
         if (!response.IsSuccessStatusCode)
@@ -36,9 +41,10 @@ public class IndexModel : PageModel
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        Customers = JsonSerializer.Deserialize<List<CustomerItem>>(content,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<CustomerItem>();
-        TotalPages = 1;
+        var result = JsonSerializer.Deserialize<ODataResponse<CustomerItem>>(content,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ODataResponse<CustomerItem>();
+        Customers = result.Value;
+        TotalPages = Math.Max(1, (int)Math.Ceiling((result.Count ?? 0) / 10d));
     }
 
     public static int CalculateAge(DateTime dateOfBirth)

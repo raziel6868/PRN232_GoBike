@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using WebUI.Services;
 
 namespace WebUI.Pages.Customers;
 
@@ -30,12 +31,19 @@ public class DetailsModel : PageModel
         Customer = JsonSerializer.Deserialize<CustomerDetail>(custJson,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new CustomerDetail();
 
-        var rentalRes = await client.GetAsync($"/api/rentalcontract?customerId={id}&pageSize=100");
+        var rentalUrl = ODataQuery.BuildCollectionUrl(
+            "RentalContracts",
+            [$"CustomerId eq {id}"],
+            "RentalDate desc",
+            1,
+            100);
+        var rentalRes = await client.GetAsync(rentalUrl);
         if (rentalRes.IsSuccessStatusCode)
         {
             var rentalJson = await rentalRes.Content.ReadAsStringAsync();
-            RentalHistory = JsonSerializer.Deserialize<List<RentalHistoryItem>>(rentalJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<RentalHistoryItem>();
+            var rentals = JsonSerializer.Deserialize<ODataResponse<RentalHistoryItem>>(rentalJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            RentalHistory = rentals?.Value ?? [];
         }
 
         return Page();
@@ -67,7 +75,7 @@ public class RentalHistoryItem
 {
     public int Id { get; set; }
     public DateTime RentalDate { get; set; }
-    public string? MotorcyclePlate { get; set; }
+    public string? MotorcycleLicensePlate { get; set; }
     public int Status { get; set; }
     public decimal TotalAmount { get; set; }
 }

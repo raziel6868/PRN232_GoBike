@@ -7,6 +7,7 @@ using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using Repositories;
 using Services;
+using Services.DTOs;
 using Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,7 +57,10 @@ builder.Services.AddAuthorization(options =>
 IEdmModel GetEdmModel()
 {
     var odataBuilder = new ODataConventionModelBuilder();
-    odataBuilder.EntitySet<Motorcycle>("Motorcycles");
+    odataBuilder.EntitySet<MotorcycleDto>("Motorcycles");
+    odataBuilder.EntitySet<CustomerListDto>("Customers");
+    odataBuilder.EntitySet<RentalContractListDto>("RentalContracts");
+    odataBuilder.EntitySet<MaintenanceRecordDto>("MaintenanceRecords");
     return odataBuilder.GetEdmModel();
 }
 

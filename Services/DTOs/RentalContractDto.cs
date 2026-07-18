@@ -3,6 +3,8 @@ namespace Services.DTOs;
 public class RentalContractListDto
 {
     public int Id { get; set; }
+    public int CustomerId { get; set; }
+    public int MotorcycleId { get; set; }
     public string? CustomerFullName { get; set; }
     public string? MotorcycleLicensePlate { get; set; }
     public DateTime RentalDate { get; set; }

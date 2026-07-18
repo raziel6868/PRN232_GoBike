@@ -13,6 +13,7 @@ public class MaintenanceRecordDto
     public string? Description { get; set; }
     public decimal RepairCost { get; set; }
     public MaintenanceStatus Status { get; set; }
+    public int StatusCode { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public int? CreatedByUserId { get; set; }

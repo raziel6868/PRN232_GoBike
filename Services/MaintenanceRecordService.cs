@@ -237,6 +237,7 @@ public class MaintenanceRecordService : IMaintenanceRecordService
         Description = record.Description,
         RepairCost = record.RepairCost,
         Status = record.Status,
+        StatusCode = (int)record.Status,
         StartDate = record.StartDate,
         EndDate = record.EndDate,
         CreatedByUserId = record.CreatedByUserId,

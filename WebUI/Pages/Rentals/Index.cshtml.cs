@@ -1,8 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using BusinessObjects.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Services.DTOs;
+using WebUI.Services;
 
 namespace WebUI.Pages.Rentals;
 
@@ -43,43 +45,42 @@ public class IndexModel : PageModel
             Converters = { new JsonStringEnumConverter() }
         };
 
-        var custRes = await client.GetAsync("/api/customer");
+        var rentalFilters = new List<string>();
+        if (FilterCustomerId.HasValue)
+            rentalFilters.Add($"CustomerId eq {FilterCustomerId.Value}");
+        if (FilterMotorcycleId.HasValue)
+            rentalFilters.Add($"MotorcycleId eq {FilterMotorcycleId.Value}");
+        if (Enum.TryParse<RentalStatus>(FilterStatus, true, out var status))
+            rentalFilters.Add($"Status eq {(int)status}");
+        if (FilterFromDate.HasValue)
+            rentalFilters.Add($"RentalDate ge {ODataQuery.DateTimeOffsetLiteral(FilterFromDate.Value.Date)}");
+        if (FilterToDate.HasValue)
+            rentalFilters.Add($"RentalDate lt {ODataQuery.DateTimeOffsetLiteral(FilterToDate.Value.Date.AddDays(1))}");
+
+        var customerTask = client.GetAsync(ODataQuery.BuildCollectionUrl("Customers", [], "FullName asc", 1, 100));
+        var motorcycleTask = client.GetAsync(ODataQuery.BuildCollectionUrl("Motorcycles", [], "LicensePlate asc", 1, 100));
+        var rentalTask = client.GetAsync(ODataQuery.BuildCollectionUrl("RentalContracts", rentalFilters, "CreatedAt desc", 1, 100));
+        await Task.WhenAll(customerTask, motorcycleTask, rentalTask);
+
+        var custRes = await customerTask;
         if (custRes.IsSuccessStatusCode)
         {
             var custJson = await custRes.Content.ReadAsStringAsync();
-            Customers = JsonSerializer.Deserialize<List<CustomerOption>>(custJson, jsonOptions) ?? new();
+            Customers = (JsonSerializer.Deserialize<ODataResponse<CustomerOption>>(custJson, jsonOptions)?.Value) ?? [];
         }
 
-        var motoRes = await client.GetAsync("/api/motorcycles?page=1&pageSize=100");
+        var motoRes = await motorcycleTask;
         if (motoRes.IsSuccessStatusCode)
         {
             var motoJson = await motoRes.Content.ReadAsStringAsync();
-            var page = JsonSerializer.Deserialize<PaginatedResult<MotorcycleDto>>(motoJson, jsonOptions);
-            Motorcycles = page?.Items.Select(m => new MotorcycleOption
-            {
-                Id = m.Id,
-                LicensePlate = m.LicensePlate,
-                Brand = m.Brand,
-                Model = m.Model,
-                DailyRate = m.DailyRate,
-                Mileage = m.Mileage
-            }).ToList() ?? new();
+            Motorcycles = (JsonSerializer.Deserialize<ODataResponse<MotorcycleOption>>(motoJson, jsonOptions)?.Value) ?? [];
         }
 
-        var queryParams = new List<string>();
-        if (FilterCustomerId.HasValue) queryParams.Add($"customerId={FilterCustomerId}");
-        if (FilterMotorcycleId.HasValue) queryParams.Add($"motorcycleId={FilterMotorcycleId}");
-        if (!string.IsNullOrEmpty(FilterStatus)) queryParams.Add($"status={FilterStatus}");
-        if (FilterFromDate.HasValue) queryParams.Add($"fromDate={FilterFromDate:yyyy-MM-dd}");
-        if (FilterToDate.HasValue) queryParams.Add($"toDate={FilterToDate:yyyy-MM-dd}");
-
-        var url = "/api/rental-contracts" + (queryParams.Any() ? "?" + string.Join("&", queryParams) : "");
-        var rentalRes = await client.GetAsync(url);
-
+        var rentalRes = await rentalTask;
         if (rentalRes.IsSuccessStatusCode)
         {
             var rentalJson = await rentalRes.Content.ReadAsStringAsync();
-            Rentals = JsonSerializer.Deserialize<List<RentalListItem>>(rentalJson, jsonOptions) ?? new();
+            Rentals = (JsonSerializer.Deserialize<ODataResponse<RentalListItem>>(rentalJson, jsonOptions)?.Value) ?? [];
         }
 
         return Page();

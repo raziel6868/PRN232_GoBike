@@ -11,6 +11,7 @@ public class MotorcycleDto
     public int VehicleTypeId { get; set; }
     public string VehicleTypeName { get; set; } = string.Empty;
     public MotorcycleStatus Status { get; set; }
+    public int StatusCode { get; set; }
     public string StatusText => Status.ToString();
     public decimal DailyRate { get; set; }
     public string Color { get; set; } = string.Empty;

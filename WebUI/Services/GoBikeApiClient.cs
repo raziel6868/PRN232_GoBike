@@ -136,18 +136,19 @@ public class GoBikeApiClient : IGoBikeApiClient
         int pageNumber,
         int pageSize = 20)
     {
-        var query = $"api/motorcycles?page={pageNumber}&pageSize={pageSize}";
+        var filters = new List<string>();
         if (!string.IsNullOrWhiteSpace(search))
-            query += $"&search={Uri.EscapeDataString(search)}";
+            filters.Add(ODataQuery.ContainsAny(search, "LicensePlate", "Brand", "Model", "RegistrationNo"));
         if (status.HasValue)
-            query += $"&status={status.Value}";
+            filters.Add($"StatusCode eq {(int)status.Value}");
         if (minPrice.HasValue)
-            query += $"&minPrice={minPrice.Value}";
+            filters.Add($"DailyRate ge {ODataQuery.DecimalLiteral(minPrice.Value)}");
         if (maxPrice.HasValue)
-            query += $"&maxPrice={maxPrice.Value}";
+            filters.Add($"DailyRate le {ODataQuery.DecimalLiteral(maxPrice.Value)}");
 
+        var query = ODataQuery.BuildCollectionUrl("Motorcycles", filters, "CreatedAt desc", pageNumber, pageSize);
         var response = await httpClient.GetAsync(query);
-        return await ReadAsync<PaginatedResult<MotorcycleDto>>(response);
+        return await ReadODataPageAsync<MotorcycleDto>(response, pageNumber, pageSize);
     }
 
     public Task<(bool Success, MotorcycleDetailDto? Motorcycle, string? Error)> GetMotorcycleAsync(int id)
@@ -190,14 +191,15 @@ public class GoBikeApiClient : IGoBikeApiClient
         int pageNumber,
         int pageSize = 10)
     {
-        var query = $"api/maintenance-records?page={pageNumber}&pageSize={pageSize}";
+        var filters = new List<string>();
         if (motorcycleId.HasValue)
-            query += $"&motorcycleId={motorcycleId.Value}";
+            filters.Add($"MotorcycleId eq {motorcycleId.Value}");
         if (status.HasValue)
-            query += $"&status={status.Value}";
+            filters.Add($"StatusCode eq {(int)status.Value}");
 
+        var query = ODataQuery.BuildCollectionUrl("MaintenanceRecords", filters, "CreatedAt desc", pageNumber, pageSize);
         var response = await httpClient.GetAsync(query);
-        return await ReadAsync<PaginatedResult<MaintenanceRecordDto>>(response);
+        return await ReadODataPageAsync<MaintenanceRecordDto>(response, pageNumber, pageSize);
     }
 
     public async Task<(bool Success, MaintenanceRecordDto? Record, string? Error)> CreateMaintenanceRecordAsync(
@@ -213,6 +215,17 @@ public class GoBikeApiClient : IGoBikeApiClient
         if (response.StatusCode == HttpStatusCode.NotFound)
             return (false, null, "Motorcycle not found");
         return await ReadAsync<MotorcycleDetailDto>(response);
+    }
+
+    private static async Task<(bool Success, PaginatedResult<T>? Result, string? Error)> ReadODataPageAsync<T>(
+        HttpResponseMessage response,
+        int pageNumber,
+        int pageSize)
+    {
+        var (success, data, error) = await ReadAsync<ODataResponse<T>>(response);
+        return !success || data == null
+            ? (false, null, error)
+            : (true, data.ToPaginatedResult(pageNumber, pageSize), null);
     }
 
     private static async Task<(bool Success, T? Data, string? Error)> ReadAsync<T>(HttpResponseMessage response)
