@@ -6,7 +6,6 @@ using Services.Interfaces;
 
 namespace API.Controllers;
 
-[Authorize(Roles = "Admin,Staff")]
 [ApiController]
 [Route("api/[controller]")]
 public class MotorcycleTypesController : ControllerBase

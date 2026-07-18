@@ -108,20 +108,23 @@ else
                     <div class="motorcycle-actions">
                         <a asp-page="./Details" asp-route-id="@item.Id"
                            class="btn btn-sm btn-outline-primary">View</a>
-                        <button class="btn btn-sm btn-outline-secondary btn-edit"
-                                data-bs-toggle="modal" data-bs-target="#editModal"
-                                data-id="@item.Id"
-                                data-licenseplate="@item.LicensePlate"
-                                data-brand="@item.Brand"
-                                data-model="@item.Model"
-                                data-vehicletypeid="@item.VehicleTypeId"
-                                data-dailyrate="@item.DailyRate"
-                                data-color="@item.Color"
-                                data-mileage="@item.Mileage"
-                                data-registrationno="@item.RegistrationNo"
-                                data-imageurl="@item.ImageUrl">
-                            Edit
-                        </button>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Staff"))
+                        {
+                            <button class="btn btn-sm btn-outline-secondary btn-edit"
+                                    data-bs-toggle="modal" data-bs-target="#editModal"
+                                    data-id="@item.Id"
+                                    data-licenseplate="@item.LicensePlate"
+                                    data-brand="@item.Brand"
+                                    data-model="@item.Model"
+                                    data-vehicletypeid="@item.VehicleTypeId"
+                                    data-dailyrate="@item.DailyRate"
+                                    data-color="@item.Color"
+                                    data-mileage="@item.Mileage"
+                                    data-registrationno="@item.RegistrationNo"
+                                    data-imageurl="@item.ImageUrl">
+                                Edit
+                            </button>
+                        }
                         @if (User.IsInRole("Admin"))
                         {
                             <button class="btn btn-sm btn-outline-danger btn-delete"

@@ -5,7 +5,7 @@
     ViewData["Title"] = "Dashboard";
 }
 
-@if (User.Identity?.IsAuthenticated == true)
+@if (User.IsInRole("Admin") || User.IsInRole("Staff"))
 {
     var name = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
         ?? User.Identity?.Name
@@ -168,8 +168,19 @@ else
 {
     <section class="hero-panel mx-auto" style="max-width: 760px;">
         <div class="page-kicker">GoBike</div>
-        <h1 class="mb-2">Motorcycle rental operations</h1>
-        <p class="page-subtitle mb-4">Sign in to manage customers, rentals, inspections, payments, and fleet status.</p>
-        <a class="btn btn-primary" asp-page="/Account/Login">Login</a>
+        <h1 class="mb-2">Find your next ride</h1>
+        <p class="page-subtitle mb-4">Browse available motorcycles and plan your route around the city.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" asp-page="/Motorcycle/Index">Browse motorcycles</a>
+            <a class="btn btn-outline-primary" asp-page="/Routes/Index">Route planner</a>
+            @if (User.IsInRole("Customer"))
+            {
+                <a class="btn btn-outline-secondary" asp-page="/Account/Profile">My profile</a>
+            }
+            else
+            {
+                <a class="btn btn-outline-secondary" asp-page="/Account/Register">Create account</a>
+            }
+        </div>
     </section>
 }

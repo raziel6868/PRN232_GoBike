@@ -8,7 +8,6 @@ using Services.DTOs;
 
 namespace API.Controllers.OData;
 
-[Authorize(Roles = "Admin,Staff")]
 [Route("odata")]
 public sealed class MotorcyclesController : ODataController
 {

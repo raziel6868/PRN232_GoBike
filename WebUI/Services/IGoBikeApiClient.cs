@@ -7,8 +7,11 @@ namespace WebUI.Services;
 public interface IGoBikeApiClient
 {
     Task<(bool Success, LoginResponse? User, string? Error)> LoginAsync(LoginRequest request);
+    Task<(bool Success, string? Error)> RegisterCustomerAsync(CustomerRegistrationRequest request);
     Task LogoutAsync();
     Task<(bool Success, UserProfileDto? Profile, string? Error)> GetProfileAsync();
+    Task<(bool Success, UserProfileDto? Profile, string? Error)> UpdateOwnProfileAsync(
+        CustomerProfileUpdateRequest request);
     Task<(bool Success, List<UserDto>? Users, string? Error)> GetStaffUsersAsync();
     Task<(bool Success, UserDto? User, string? Error)> GetStaffUserAsync(int id);
     Task<(bool Success, UserDto? User, string? Error)> CreateStaffUserAsync(CreateStaffUserRequest request);

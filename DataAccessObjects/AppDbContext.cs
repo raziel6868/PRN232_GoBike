@@ -29,7 +29,14 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Motorcycle>().HasIndex(m => m.RegistrationNo).IsUnique().HasFilter("[RegistrationNo] IS NOT NULL");
         modelBuilder.Entity<Customer>().HasIndex(c => c.CCCD).IsUnique();
         modelBuilder.Entity<Customer>().HasIndex(c => c.DriverLicenseNo).IsUnique();
+        modelBuilder.Entity<User>().HasIndex(u => u.CustomerId).IsUnique().HasFilter("[CustomerId] IS NOT NULL");
         modelBuilder.Entity<RentalInspection>().HasIndex(i => new { i.RentalContractId, i.InspectionType }).IsUnique();
+
+        modelBuilder.Entity<User>()
+            .HasOne(user => user.Customer)
+            .WithOne(customer => customer.User)
+            .HasForeignKey<User>(user => user.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Decimal precision
         modelBuilder.Entity<MotorcycleType>().Property(m => m.DefaultDailyRate).HasPrecision(18, 2);

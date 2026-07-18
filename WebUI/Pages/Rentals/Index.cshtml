@@ -19,6 +19,11 @@
     }
 </div>
 
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
 <div class="filter-panel mb-4">
     <form method="get" class="row g-3 align-items-end">
         <div class="col-md-2">

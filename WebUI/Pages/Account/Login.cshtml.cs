@@ -81,6 +81,9 @@ public class LoginModel : PageModel
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return LocalRedirect(returnUrl);
 
+        if (user.Role == BusinessObjects.Enums.UserRole.Customer)
+            return RedirectToPage("/Motorcycle/Index");
+
         return AuthRedirectHelper.RedirectToHome(this);
     }
 

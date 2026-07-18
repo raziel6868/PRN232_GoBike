@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using BusinessObjects;
 
 namespace BusinessObjects.Entities;
@@ -26,6 +27,11 @@ public class User
     public string? PhoneNumber { get; set; }
 
     public BusinessObjects.Enums.UserRole Role { get; set; }
+
+    public int? CustomerId { get; set; }
+
+    [ForeignKey(nameof(CustomerId))]
+    public Customer? Customer { get; set; }
 
     public bool IsActive { get; set; } = true;
 

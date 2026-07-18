@@ -1,10 +1,13 @@
 ﻿using System.Security.Claims;
 using BusinessObjects.DTOs;
+using API.Accounts;
 using BusinessObjects.Entities;
+using BusinessObjects.Enums;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Services.Interfaces;
 
 namespace API.Controllers;
@@ -14,10 +17,12 @@ namespace API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserService userService;
+    private readonly ICustomerAccountService customerAccountService;
 
-    public AuthController(IUserService userService)
+    public AuthController(IUserService userService, ICustomerAccountService customerAccountService)
     {
         this.userService = userService;
+        this.customerAccountService = customerAccountService;
     }
 
     [AllowAnonymous]
@@ -33,6 +38,9 @@ public class AuthController : ControllerBase
 
         if (!user.IsActive)
             return Unauthorized(new { message = "User account is inactive" });
+
+        if (user.Role == UserRole.Customer && (user.Customer == null || !user.Customer.IsActive))
+            return Unauthorized(new { message = "Customer account is inactive" });
 
         var claims = new List<Claim>
         {
@@ -58,6 +66,24 @@ public class AuthController : ControllerBase
         });
     }
 
+    [AllowAnonymous]
+    [EnableRateLimiting("Registration")]
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(
+        [FromBody] CustomerRegistrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var (user, error) = await customerAccountService.RegisterAsync(request, cancellationToken);
+        if (user == null)
+            return Conflict(new { message = error ?? "Unable to register customer account." });
+
+        return Created("/api/auth/profile", new ApiLoginResult
+        {
+            Message = "Customer account created successfully",
+            User = MapLoginResponse(user)
+        });
+    }
+
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
@@ -75,26 +101,35 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpGet("profile")]
-    public async Task<IActionResult> GetProfile()
+    public async Task<IActionResult> GetProfile(CancellationToken cancellationToken)
     {
-        var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        if (string.IsNullOrEmpty(username))
+        if (!TryGetUserId(out var userId))
             return Unauthorized();
 
-        var user = await userService.GetByUsernameAsync(username);
+        var user = await customerAccountService.GetUserWithCustomerAsync(userId, cancellationToken);
         if (user == null)
             return NotFound(new { message = "User not found" });
 
-        return Ok(new UserProfileDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = user.Role,
-            IsActive = user.IsActive,
-            CreatedAt = user.CreatedAt
-        });
+        return Ok(MapProfile(user));
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(
+        [FromBody] CustomerProfileUpdateRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        var (user, error) = await customerAccountService.UpdateOwnProfileAsync(
+            userId,
+            request,
+            cancellationToken);
+
+        return user == null
+            ? BadRequest(new { message = error ?? "Unable to update customer profile." })
+            : Ok(MapProfile(user));
     }
 
     private static LoginResponse MapLoginResponse(User user) => new()
@@ -103,6 +138,27 @@ public class AuthController : ControllerBase
         Username = user.Username,
         FullName = user.FullName,
         Email = user.Email ?? string.Empty,
-        Role = user.Role
+        Role = user.Role,
+        CustomerId = user.CustomerId
     };
+
+    private static UserProfileDto MapProfile(User user) => new()
+    {
+        Id = user.Id,
+        Username = user.Username,
+        FullName = user.Customer?.FullName ?? user.FullName,
+        Email = user.Customer?.Email ?? user.Email,
+        PhoneNumber = user.Customer?.PhoneNumber ?? user.PhoneNumber,
+        Role = user.Role,
+        CustomerId = user.CustomerId,
+        Address = user.Customer?.Address,
+        CCCD = user.Customer?.CCCD,
+        DateOfBirth = user.Customer?.DateOfBirth,
+        DriverLicenseNo = user.Customer?.DriverLicenseNo,
+        IsActive = user.IsActive && (user.Customer?.IsActive ?? true),
+        CreatedAt = user.CreatedAt
+    };
+
+    private bool TryGetUserId(out int userId)
+        => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
 }

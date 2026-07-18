@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Services.DTOs;
 using WebUI.Services;
+using WebUI.Services.Internal;
 
 namespace WebUI.Pages.Rentals;
 
@@ -20,6 +21,7 @@ public class IndexModel : PageModel
     public List<RentalListItem> Rentals { get; set; } = new();
     public List<CustomerOption> Customers { get; set; } = new();
     public List<MotorcycleOption> Motorcycles { get; set; } = new();
+    public string? ErrorMessage { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public int? FilterCustomerId { get; set; }
@@ -81,6 +83,10 @@ public class IndexModel : PageModel
         {
             var rentalJson = await rentalRes.Content.ReadAsStringAsync();
             Rentals = (JsonSerializer.Deserialize<ODataResponse<RentalListItem>>(rentalJson, jsonOptions)?.Value) ?? [];
+        }
+        else
+        {
+            ErrorMessage = await ApiResponseReader.ReadErrorMessageAsync(rentalRes);
         }
 
         return Page();

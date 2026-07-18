@@ -1,12 +1,13 @@
 using API.Integrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Services.DTOs;
 
 namespace API.Controllers;
 
-[Authorize(Roles = "Admin,Staff")]
 [ApiController]
+[EnableRateLimiting("PublicRouteApi")]
 [Route("api/routes")]
 public sealed class RoutesController : ControllerBase
 {

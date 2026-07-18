@@ -67,6 +67,9 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostEditAsync(int id, [FromForm] UpdateMotorcycleRequest request, IFormFile? imageFile)
     {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
+            return Forbid();
+
         var (imageUrl, imageError) = await SaveMotorcycleImageAsync(imageFile);
         if (imageError != null)
         {

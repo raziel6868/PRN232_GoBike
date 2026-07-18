@@ -35,7 +35,10 @@ public class MotorcycleRepository : Repository<Motorcycle>, IMotorcycleRepositor
         int page,
         int pageSize)
     {
-        var query = dbSet.Include(m => m.VehicleType).AsQueryable();
+        var query = dbSet
+            .Include(m => m.VehicleType)
+            .Where(m => m.IsActive)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {

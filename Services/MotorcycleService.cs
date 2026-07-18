@@ -230,6 +230,7 @@ public class MotorcycleService : IMotorcycleService
         Mileage = m.Mileage,
         RegistrationNo = m.RegistrationNo,
         ImageUrl = m.ImageUrl,
+        IsActive = m.IsActive,
         CreatedAt = m.CreatedAt,
         UpdatedAt = m.UpdatedAt,
         RecentRentals = m.RentalContracts.Select(r => new RentalHistoryItem

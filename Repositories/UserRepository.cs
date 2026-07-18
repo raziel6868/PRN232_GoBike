@@ -12,10 +12,10 @@ public class UserRepository : Repository<User>, IUserRepository
     }
 
     public override Task<User?> GetByIdAsync(int id)
-        => dbSet.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id);
+        => dbSet.IgnoreQueryFilters().Include(x => x.Customer).FirstOrDefaultAsync(x => x.Id == id);
 
     public Task<User?> GetByUsernameAsync(string username)
-        => dbSet.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Username == username);
+        => dbSet.IgnoreQueryFilters().Include(x => x.Customer).FirstOrDefaultAsync(x => x.Username == username);
 
     public Task<List<User>> GetStaffUsersAsync()
         => dbSet.IgnoreQueryFilters().Where(x => x.Role == UserRole.Staff).OrderBy(x => x.Username).ToListAsync();

@@ -45,5 +45,7 @@ public class Customer
 
     public DateTime? UpdatedAt { get; set; }
 
+    public User? User { get; set; }
+
     public ICollection<RentalContract> RentalContracts { get; set; } = new List<RentalContract>();
 }

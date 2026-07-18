@@ -87,6 +87,8 @@
     </div>
 </div>
 
+@if (User.IsInRole("Admin") || User.IsInRole("Staff"))
+{
 <div class="content-card">
     <div class="card-body p-0">
         <div class="px-3 py-3 border-bottom">
@@ -143,3 +145,4 @@
         </div>
     </div>
 </div>
+}

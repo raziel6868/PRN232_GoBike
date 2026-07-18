@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
@@ -8,7 +7,6 @@ using WebUI.Services;
 
 namespace WebUI.Pages.Routes;
 
-[Authorize(Roles = "Admin,Staff")]
 public sealed class IndexModel : PageModel
 {
     private readonly IGoBikeApiClient apiClient;

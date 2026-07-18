@@ -1,151 +1,103 @@
 @page
 @model WebUI.Pages.Account.ProfileModel
 @{
-    ViewData["Title"] = "User Profile";
+    ViewData["Title"] = "My profile";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-dark text-white">
-                    <h3 class="mb-0">
-                        <i class="bi bi-person-circle"></i> User Profile
-                    </h3>
-                </div>
-                <div class="card-body p-4">
-                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-circle"></i> @Model.ErrorMessage
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    }
-
-                    @if (Model.UserProfile != null)
-                    {
-                        <div class="row mb-4">
-                            <div class="col-md-3 text-center">
-                                <div class="avatar-placeholder" style="width: 150px; height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 60px; margin: 0 auto;">
-                                    <i class="bi bi-person"></i>
-                                </div>
-                            </div>
-                            <div class="col-md-9">
-                                <table class="table table-borderless">
-                                    <tbody>
-                                        <tr>
-                                            <td class="fw-bold">Username:</td>
-                                            <td>
-                                                <code>@Model.UserProfile.Username</code>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Full Name:</td>
-                                            <td>@Model.UserProfile.FullName</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Email:</td>
-                                            <td>
-                                                <a href="mailto:@Model.UserProfile.Email">@Model.UserProfile.Email</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Role:</td>
-                                            <td>
-                                                @if (Model.UserProfile.RoleName == "Admin")
-                                                {
-                                                    <span class="badge bg-danger">@Model.UserProfile.RoleName</span>
-                                                }
-                                                else if (Model.UserProfile.RoleName == "Staff")
-                                                {
-                                                    <span class="badge bg-info">@Model.UserProfile.RoleName</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-secondary">@Model.UserProfile.RoleName</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Status:</td>
-                                            <td>
-                                                @if (Model.UserProfile.IsActive)
-                                                {
-                                                    <span class="badge bg-success">Active</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-danger">Inactive</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Member Since:</td>
-                                            <td>@Model.UserProfile.CreatedAt.ToString("MMMM dd, yyyy")</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <h5>Account Information</h5>
-                                <ul class="list-unstyled">
-                                    <li class="mb-2">
-                                        <strong>User ID:</strong> #@Model.UserProfile.Id
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>Account Type:</strong> 
-                                        @if (Model.UserProfile.RoleName == "Admin")
-                                        {
-                                            <span>Administrator - Full system access</span>
-                                        }
-                                        else if (Model.UserProfile.RoleName == "Staff")
-                                        {
-                                            <span>Staff Member - Limited access</span>
-                                        }
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>Joined:</strong> @Model.UserProfile.CreatedAt.ToString("MMMM dd, yyyy HH:mm")
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <a href="/" class="btn btn-secondary">
-                                    <i class="bi bi-arrow-left"></i> Back to Home
-                                </a>
-                                <a href="/Account/Logout" class="btn btn-danger float-end">
-                                    <i class="bi bi-box-arrow-right"></i> Logout
-                                </a>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
+<div class="page-heading">
+    <div>
+        <div class="page-kicker">Account</div>
+        <h1>My profile</h1>
+        <p class="page-subtitle">Review your account and personal information.</p>
     </div>
+    <a asp-page="/Index" class="btn btn-outline-secondary">Back</a>
 </div>
 
-<style>
-    .card {
-        border: none;
+@if (TempData["ProfileSuccess"] != null)
+{
+    <div class="alert alert-success">@TempData["ProfileSuccess"]</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+@if (Model.UserProfile != null)
+{
+    @if (Model.IsCustomer)
+    {
+        <form method="post" class="content-card">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between gap-2 mb-4">
+                    <div>
+                        <div class="page-kicker">Signed in as</div>
+                        <h2 class="h5 mb-0">@Model.UserProfile.Username</h2>
+                    </div>
+                    <span class="badge bg-primary align-self-start">Customer</span>
+                </div>
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Form.FullName" class="form-label">Full name</label>
+                        <input asp-for="Form.FullName" class="form-control" />
+                        <span asp-validation-for="Form.FullName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Form.Email" class="form-label"></label>
+                        <input asp-for="Form.Email" class="form-control" />
+                        <span asp-validation-for="Form.Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Form.PhoneNumber" class="form-label">Phone number</label>
+                        <input asp-for="Form.PhoneNumber" class="form-control" />
+                        <span asp-validation-for="Form.PhoneNumber" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Form.Address" class="form-label"></label>
+                        <input asp-for="Form.Address" class="form-control" />
+                        <span asp-validation-for="Form.Address" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Form.CCCD" class="form-label">CCCD</label>
+                        <input asp-for="Form.CCCD" class="form-control" inputmode="numeric" />
+                        <span asp-validation-for="Form.CCCD" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Form.DateOfBirth" class="form-label">Date of birth</label>
+                        <input asp-for="Form.DateOfBirth" type="date" class="form-control" />
+                        <span asp-validation-for="Form.DateOfBirth" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Form.DriverLicenseNo" class="form-label">Driver licence</label>
+                        <input asp-for="Form.DriverLicenseNo" class="form-control" />
+                        <span asp-validation-for="Form.DriverLicenseNo" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-end p-3">
+                <button type="submit" class="btn btn-primary">Save profile</button>
+            </div>
+        </form>
     }
-    .card-header {
-        border-radius: 10px 10px 0 0;
+    else
+    {
+        <div class="content-card">
+            <div class="card-body p-4">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Username</dt>
+                    <dd class="col-sm-9">@Model.UserProfile.Username</dd>
+                    <dt class="col-sm-3">Full name</dt>
+                    <dd class="col-sm-9">@Model.UserProfile.FullName</dd>
+                    <dt class="col-sm-3">Email</dt>
+                    <dd class="col-sm-9">@(Model.UserProfile.Email ?? "-")</dd>
+                    <dt class="col-sm-3">Role</dt>
+                    <dd class="col-sm-9">@Model.UserProfile.RoleName</dd>
+                </dl>
+            </div>
+        </div>
     }
-    .table td {
-        padding: 12px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    .table td:first-child {
-        width: 150px;
-    }
-</style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

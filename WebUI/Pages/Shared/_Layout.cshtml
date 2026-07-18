@@ -2,16 +2,17 @@
     var currentPath = Context.Request.Path.ToString().ToLowerInvariant();
     var isAdmin = User.IsInRole("Admin");
     var isStaff = User.IsInRole("Staff");
+    var isCustomer = User.IsInRole("Customer");
     var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
         ?? User.Identity?.Name
         ?? "User";
-    var roleLabel = isAdmin ? "ADMIN" : isStaff ? "STAFF" : null;
+    var roleLabel = isAdmin ? "ADMIN" : isStaff ? "STAFF" : isCustomer ? "CUSTOMER" : null;
     var roleClass = isAdmin ? "admin" : "";
     var footerText = isAdmin
         ? "Internal motorcycle rental operations"
         : isStaff
             ? "Rental desk operations"
-            : "Motorcycle rental system";
+            : isCustomer ? "Customer motorcycle services" : "Motorcycle rental system";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -47,6 +48,12 @@
                             <li class="nav-item">
                                 <a class="nav-link @(currentPath == "/" || currentPath.StartsWith("/index") ? "active" : "")" asp-area="" asp-page="/Index">Dashboard</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(currentPath.StartsWith("/motorcycle") ? "active" : "")" href="/Motorcycle">Motorcycles</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(currentPath.StartsWith("/routes") ? "active" : "")" href="/Routes">Route Planner</a>
+                            </li>
                             @if (isAdmin)
                             {
                                 <li class="nav-item">
@@ -59,16 +66,10 @@
                             @if (isAdmin || isStaff)
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link @(currentPath.StartsWith("/motorcycle") ? "active" : "")" href="/Motorcycle">Motorcycles</a>
-                                </li>
-                                <li class="nav-item">
                                     <a class="nav-link @(currentPath.StartsWith("/customers") ? "active" : "")" href="/Customers">Customers</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link @(currentPath.StartsWith("/rentals") ? "active" : "")" href="/Rentals">Rentals</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link @(currentPath.StartsWith("/routes") ? "active" : "")" href="/Routes">Route Planner</a>
                                 </li>
                             }
                             @if (User.Identity?.IsAuthenticated == true)
@@ -86,6 +87,9 @@
                             }
                             else
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-page="/Account/Register">Register</a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="btn btn-primary" asp-page="/Account/Login">Login</a>
                                 </li>

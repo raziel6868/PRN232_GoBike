@@ -24,10 +24,8 @@ builder.Services.Configure<MapTilerSettings>(
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/Admin", "AdminOnly");
-    options.Conventions.AuthorizeFolder("/Motorcycle", "AdminOrStaff");
     options.Conventions.AuthorizeFolder("/Customers", "AdminOrStaff");
     options.Conventions.AuthorizeFolder("/Rentals", "AdminOrStaff");
-    options.Conventions.AuthorizeFolder("/Routes", "AdminOrStaff");
 });
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

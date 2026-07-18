@@ -17,6 +17,7 @@ public class RentalContractListDto
     public int Status { get; set; }
     public string StatusText { get; set; } = string.Empty;
     public string? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class RentalContractDetailDto

@@ -8,7 +8,7 @@ public static class AuthorizationHelper
     public static UserRole GetUserRole(ClaimsPrincipal user)
     {
         var roleClaim = user.FindFirst(ClaimTypes.Role)?.Value;
-        return Enum.Parse<UserRole>(roleClaim ?? "Staff");
+        return Enum.TryParse<UserRole>(roleClaim, out var role) ? role : UserRole.Staff;
     }
 
     public static string GetLayoutPath(ClaimsPrincipal user)

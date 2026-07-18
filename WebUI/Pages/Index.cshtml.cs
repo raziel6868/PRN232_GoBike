@@ -25,7 +25,7 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        if (User.Identity?.IsAuthenticated != true)
+        if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
             return;
 
         var client = _httpClientFactory.CreateClient("GobikeApi");

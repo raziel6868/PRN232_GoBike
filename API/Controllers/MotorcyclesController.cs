@@ -6,7 +6,6 @@ using Services.Interfaces;
 
 namespace API.Controllers;
 
-[Authorize(Roles = "Admin,Staff")]
 [ApiController]
 [Route("api/[controller]")]
 public class MotorcyclesController : ControllerBase
@@ -38,6 +37,14 @@ public class MotorcyclesController : ControllerBase
         if (motorcycle == null)
             return NotFound(new { message = $"Motorcycle with ID {id} not found." });
 
+        if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
+        {
+            if (!motorcycle.IsActive)
+                return NotFound(new { message = $"Motorcycle with ID {id} not found." });
+
+            motorcycle.RecentRentals = [];
+        }
+
         return Ok(motorcycle);
     }
 
@@ -66,6 +73,7 @@ public class MotorcyclesController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "Admin,Staff")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateMotorcycleRequest request)
     {

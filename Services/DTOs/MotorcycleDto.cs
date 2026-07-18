@@ -24,6 +24,7 @@ public class MotorcycleDto
 
 public class MotorcycleDetailDto : MotorcycleDto
 {
+    public bool IsActive { get; set; }
     public List<RentalHistoryItem> RecentRentals { get; set; } = [];
 }
 

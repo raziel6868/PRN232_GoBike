@@ -6,5 +6,7 @@ namespace WebUI.Helpers;
 public static class AuthRedirectHelper
 {
     public static IActionResult RedirectToHome(PageModel page)
-        => page.RedirectToPage("/Index");
+        => page.User.IsInRole("Customer")
+            ? page.RedirectToPage("/Motorcycle/Index")
+            : page.RedirectToPage("/Index");
 }

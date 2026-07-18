@@ -10,4 +10,5 @@ public class LoginResponse
     public string Email { get; set; } = string.Empty;
     public UserRole Role { get; set; }
     public string RoleName => Role.ToString();
+    public int? CustomerId { get; set; }
 }

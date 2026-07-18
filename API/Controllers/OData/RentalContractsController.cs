@@ -39,6 +39,7 @@ public sealed class RentalContractsController : ODataController
                 FinalAmount = rental.FinalAmount,
                 CancellationFee = rental.CancellationFee,
                 Status = (int)rental.Status,
-                CreatedBy = rental.CreatedBy
+                CreatedBy = rental.CreatedBy,
+                CreatedAt = rental.CreatedAt
             });
 }
