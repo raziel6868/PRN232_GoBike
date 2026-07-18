@@ -226,22 +226,55 @@ public class GoBikeApiClient : IGoBikeApiClient
 
     public async Task<(bool Success, List<PlaceSuggestionDto>? Places, string? Error)> SearchPlacesAsync(string query)
     {
-        var response = await httpClient.GetAsync($"api/routes/search?query={Uri.EscapeDataString(query)}");
-        return await ReadAsync<List<PlaceSuggestionDto>>(response);
+        try
+        {
+            var response = await httpClient.GetAsync($"api/routes/search?query={Uri.EscapeDataString(query)}");
+            return await ReadAsync<List<PlaceSuggestionDto>>(response);
+        }
+        catch (HttpRequestException)
+        {
+            return (false, null, "Cannot connect to the route API. Ensure the API is running on port 5210.");
+        }
+        catch (TaskCanceledException)
+        {
+            return (false, null, "The route API request timed out.");
+        }
     }
 
     public async Task<(bool Success, RouteAssistantResponseDto? Response, string? Error)> AskRouteAssistantAsync(
         RouteAssistantRequestDto request)
     {
-        var response = await httpClient.PostAsJsonAsync("api/routes/assistant", request, JsonOptions);
-        return await ReadAsync<RouteAssistantResponseDto>(response);
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync("api/routes/assistant", request, JsonOptions);
+            return await ReadAsync<RouteAssistantResponseDto>(response);
+        }
+        catch (HttpRequestException)
+        {
+            return (false, null, "Cannot connect to the route API. Ensure the API is running on port 5210.");
+        }
+        catch (TaskCanceledException)
+        {
+            return (false, null, "The route assistant request timed out.");
+        }
     }
 
     public async Task<(bool Success, RouteResultDto? Route, string? Error)> ComputeRouteAsync(
         ComputeRouteRequestDto request)
     {
-        var response = await httpClient.PostAsJsonAsync("api/routes/compute", request, JsonOptions);
-        return await ReadAsync<RouteResultDto>(response);
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync("api/routes/compute", request, JsonOptions);
+            return await ReadAsync<RouteResultDto>(response);
+        }
+        catch (HttpRequestException)
+        {
+            return (false, null, "Cannot connect to the route API. Ensure the API is running on port 5210.");
+        }
+        catch (TaskCanceledException)
+        {
+            return (false, null, "The route API request timed out.");
+        }
     }
 
     private async Task<(bool Success, MotorcycleDetailDto? Motorcycle, string? Error)> ReadMotorcycleDetailAsync(int id)

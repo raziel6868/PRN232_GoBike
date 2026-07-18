@@ -136,8 +136,17 @@ public sealed class OllamaPlaceIntentService : IPlaceIntentService
 
         using var intent = JsonDocument.Parse(contentElement.GetString() ?? string.Empty);
         var root = intent.RootElement;
-        var query = root.GetProperty("searchQuery").GetString()?.Trim();
-        var assistantMessage = root.GetProperty("assistantMessage").GetString()?.Trim();
+        if (root.ValueKind != JsonValueKind.Object ||
+            !root.TryGetProperty("searchQuery", out var queryElement) ||
+            queryElement.ValueKind != JsonValueKind.String ||
+            !root.TryGetProperty("assistantMessage", out var messageElement) ||
+            messageElement.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var query = queryElement.GetString()?.Trim();
+        var assistantMessage = messageElement.GetString()?.Trim();
         return !string.IsNullOrWhiteSpace(query) && !string.IsNullOrWhiteSpace(assistantMessage)
             ? new PlaceIntentResult(query, assistantMessage, true)
             : null;

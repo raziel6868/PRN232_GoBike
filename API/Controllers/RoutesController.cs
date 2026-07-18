@@ -45,9 +45,12 @@ public sealed class RoutesController : ControllerBase
         [FromBody] RouteAssistantRequestDto request,
         CancellationToken cancellationToken)
     {
-        var intent = await placeIntentService.ExtractAsync(request.Message, cancellationToken);
+        if (!IsValidSearchCoordinate(request.Latitude, request.Longitude))
+            return BadRequest(new { message = "Current location coordinates are invalid." });
+
         return await ExecuteAsync(async () =>
         {
+            var intent = await placeIntentService.ExtractAsync(request.Message, cancellationToken);
             var places = await routeService.SearchPlacesAsync(
                 intent.SearchQuery,
                 cancellationToken,
@@ -58,7 +61,7 @@ public sealed class RoutesController : ControllerBase
             return new RouteAssistantResponseDto
             {
                 AssistantMessage = places.Count == 0
-                    ? "Tôi chưa tìm thấy địa điểm phù hợp gần khu vực này. Hãy thử mô tả khác nhé."
+                    ? "Tôi chưa tìm thấy địa điểm phù hợp trong bán kính 15 km. Dữ liệu OpenStreetMap tại khu vực này có thể chưa đầy đủ."
                     : intent.AssistantMessage,
                 SearchQuery = intent.SearchQuery,
                 UsedAi = intent.UsedAi,
@@ -66,6 +69,13 @@ public sealed class RoutesController : ControllerBase
             };
         }, cancellationToken);
     }
+
+    private static bool IsValidSearchCoordinate(double latitude, double longitude)
+        => double.IsFinite(latitude) &&
+           double.IsFinite(longitude) &&
+           latitude is >= -90 and <= 90 &&
+           longitude is >= -180 and <= 180 &&
+           (Math.Abs(latitude) > double.Epsilon || Math.Abs(longitude) > double.Epsilon);
 
     private static async Task<IActionResult> ExecuteAsync<T>(
         Func<Task<T>> action,

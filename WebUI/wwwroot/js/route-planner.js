@@ -148,10 +148,14 @@
   }
 
   async function getAssistantSearchCenter() {
-    if (state.origin) return state.origin;
-
     try {
       const position = await locateCurrentPosition();
+      if (!Number.isFinite(position.coords.latitude) ||
+          !Number.isFinite(position.coords.longitude) ||
+          position.coords.accuracy > 5000) {
+        throw new Error("The current location is not accurate enough.");
+      }
+
       const currentLocation = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -160,6 +164,11 @@
       setPoint("origin", currentLocation);
       return currentLocation;
     } catch {
+      if (state.origin) {
+        appendChatMessage("Location access was unavailable, so I searched around the selected origin.", "assistant note");
+        return state.origin;
+      }
+
       const center = map.getCenter();
       appendChatMessage("Location access was unavailable, so I searched around the visible map area.", "assistant note");
       return { latitude: center.lat, longitude: center.lng };

@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
@@ -28,21 +29,50 @@ public sealed class OpenRouteService : IOpenRouteService
         EnsureConfigured();
 
         var hasFocus = focusLatitude.HasValue && focusLongitude.HasValue;
+        var normalizedLimit = Math.Clamp(limit, 1, 20);
+        var nearbyRadiusMeters = Math.Clamp(options.NearbySearchRadiusMeters, 1_000, 50_000);
+
+        if (hasFocus && TryGetPoiCategoryIds(query, out var categoryIds))
+        {
+            try
+            {
+                var poiResults = await SearchNearbyPoisAsync(
+                    categoryIds,
+                    focusLatitude!.Value,
+                    focusLongitude!.Value,
+                    nearbyRadiusMeters,
+                    normalizedLimit,
+                    cancellationToken);
+
+                if (poiResults.Count > 0)
+                    return poiResults;
+            }
+            catch (OpenRouteServiceException)
+            {
+                // Some ORS plans do not expose POI search, so retain bounded geocoding as a fallback.
+            }
+        }
+
         var queryParameters = new Dictionary<string, string?>
         {
             ["text"] = query.Trim(),
             ["boundary.country"] = "VN",
-            ["size"] = Math.Clamp(hasFocus ? limit * 2 : limit, 1, 20).ToString(CultureInfo.InvariantCulture)
+            ["size"] = Math.Clamp(hasFocus ? normalizedLimit * 3 : normalizedLimit, 1, 20)
+                .ToString(CultureInfo.InvariantCulture)
         };
 
         if (hasFocus)
         {
             queryParameters["focus.point.lat"] = focusLatitude!.Value.ToString(CultureInfo.InvariantCulture);
             queryParameters["focus.point.lon"] = focusLongitude!.Value.ToString(CultureInfo.InvariantCulture);
+            queryParameters["boundary.circle.lat"] = focusLatitude.Value.ToString(CultureInfo.InvariantCulture);
+            queryParameters["boundary.circle.lon"] = focusLongitude.Value.ToString(CultureInfo.InvariantCulture);
+            queryParameters["boundary.circle.radius"] = (nearbyRadiusMeters / 1000d)
+                .ToString(CultureInfo.InvariantCulture);
         }
 
         var url = QueryHelpers.AddQueryString(
-            BuildUrl("geocode/autocomplete"),
+            BuildUrl(hasFocus ? "geocode/search" : "geocode/autocomplete"),
             queryParameters);
 
         using var request = CreateRequest(HttpMethod.Get, url);
@@ -90,8 +120,85 @@ public sealed class OpenRouteService : IOpenRouteService
         }
 
         return results
+            .Where(place => !hasFocus || place.DistanceMeters <= nearbyRadiusMeters)
             .OrderBy(place => place.DistanceMeters ?? double.MaxValue)
-            .Take(Math.Clamp(limit, 1, 20))
+            .Take(normalizedLimit)
+            .ToList();
+    }
+
+    private async Task<IReadOnlyList<PlaceSuggestionDto>> SearchNearbyPoisAsync(
+        int[] categoryIds,
+        double latitude,
+        double longitude,
+        int radiusMeters,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        const int maximumPoiBufferMeters = 2_000;
+        var poiBufferMeters = Math.Min(radiusMeters, maximumPoiBufferMeters);
+        var body = new
+        {
+            request = "pois",
+            geometry = new
+            {
+                geojson = new
+                {
+                    type = "Point",
+                    coordinates = new[] { longitude, latitude }
+                },
+                buffer = poiBufferMeters
+            },
+            filters = new { category_ids = categoryIds },
+            limit = Math.Clamp(limit * 5, 10, 100),
+            sortby = "distance"
+        };
+
+        using var providerRequest = CreateRequest(HttpMethod.Post, BuildUrl("pois"));
+        providerRequest.Content = JsonContent.Create(body);
+        using var response = await httpClient.SendAsync(providerRequest, cancellationToken);
+        using var document = await ReadProviderResponseAsync(response, cancellationToken);
+
+        if (!document.RootElement.TryGetProperty("features", out var features) ||
+            features.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var results = new List<PlaceSuggestionDto>();
+        foreach (var feature in features.EnumerateArray())
+        {
+            if (!TryReadCoordinates(feature, out var resultLongitude, out var resultLatitude))
+                continue;
+
+            var distance = CalculateDistanceMeters(latitude, longitude, resultLatitude, resultLongitude);
+            if (distance > radiusMeters)
+                continue;
+
+            var properties = feature.TryGetProperty("properties", out var value) ? value : default;
+            var tags = properties.ValueKind == JsonValueKind.Object &&
+                       properties.TryGetProperty("osm_tags", out var osmTags)
+                ? osmTags
+                : default;
+            var name = ReadString(tags, "name") ?? ReadPoiCategoryName(properties) ?? "Place";
+            var locality = ReadString(tags, "addr:city") ?? ReadString(tags, "addr:district");
+            var region = ReadString(tags, "addr:province") ?? ReadString(tags, "addr:state");
+
+            results.Add(new PlaceSuggestionDto
+            {
+                Name = name,
+                Label = BuildPoiLabel(name, tags, locality),
+                Locality = locality,
+                Region = region,
+                Country = "Vietnam",
+                Latitude = resultLatitude,
+                Longitude = resultLongitude,
+                DistanceMeters = distance
+            });
+        }
+
+        return results
+            .OrderBy(place => place.DistanceMeters)
+            .Take(limit)
             .ToList();
     }
 
@@ -251,9 +358,16 @@ public sealed class OpenRouteService : IOpenRouteService
             return false;
         }
 
-        longitude = coordinates[0].GetDouble();
-        latitude = coordinates[1].GetDouble();
-        return true;
+        var longitudeElement = coordinates[0];
+        var latitudeElement = coordinates[1];
+        return longitudeElement.ValueKind == JsonValueKind.Number &&
+               latitudeElement.ValueKind == JsonValueKind.Number &&
+               longitudeElement.TryGetDouble(out longitude) &&
+               latitudeElement.TryGetDouble(out latitude) &&
+               double.IsFinite(longitude) &&
+               double.IsFinite(latitude) &&
+               longitude is >= -180 and <= 180 &&
+               latitude is >= -90 and <= 90;
     }
 
     private static string? ReadString(JsonElement element, string propertyName)
@@ -263,8 +377,106 @@ public sealed class OpenRouteService : IOpenRouteService
             ? property.GetString()
             : null;
 
+    private static bool TryGetPoiCategoryIds(string query, out int[] categoryIds)
+    {
+        var normalized = NormalizeForMatching(query);
+
+        if (ContainsAny(normalized, "fast food", "do an nhanh"))
+            categoryIds = [566];
+        else if (ContainsAny(normalized, "cafe", "coffee", "ca phe"))
+            categoryIds = [564];
+        else if (ContainsAny(normalized, "restaurant", "restaurants", "quan an", "nha hang", "food", "mon viet", "vietnamese"))
+            categoryIds = [570];
+        else if (ContainsAny(normalized, "pharmacy", "nha thuoc"))
+            categoryIds = [208];
+        else if (ContainsAny(normalized, "hospital", "benh vien"))
+            categoryIds = [206];
+        else if (ContainsAny(normalized, "clinic", "phong kham"))
+            categoryIds = [202];
+        else if (ContainsAny(normalized, "atm"))
+            categoryIds = [191];
+        else if (ContainsAny(normalized, "bank", "ngan hang"))
+            categoryIds = [192];
+        else if (ContainsAny(normalized, "fuel", "gas station", "cay xang", "tram xang"))
+            categoryIds = [596];
+        else if (ContainsAny(normalized, "parking", "bai do xe"))
+            categoryIds = [601];
+        else if (ContainsAny(normalized, "hotel", "khach san"))
+            categoryIds = [108];
+        else if (ContainsAny(normalized, "museum", "bao tang"))
+            categoryIds = [134];
+        else if (ContainsAny(normalized, "park", "cong vien"))
+            categoryIds = [280];
+        else if (ContainsAny(normalized, "pub"))
+            categoryIds = [569];
+        else if (ContainsAny(normalized, "bar"))
+            categoryIds = [561];
+        else
+        {
+            categoryIds = [];
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool ContainsAny(string value, params string[] terms)
+        => terms.Any(value.Contains);
+
+    private static string NormalizeForMatching(string value)
+    {
+        var decomposed = value.Trim().Normalize(NormalizationForm.FormD);
+        var withoutMarks = string.Concat(decomposed.Where(character =>
+            CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark));
+
+        return withoutMarks
+            .Normalize(NormalizationForm.FormC)
+            .ToLowerInvariant()
+            .Replace('đ', 'd');
+    }
+
+    private static string? ReadPoiCategoryName(JsonElement properties)
+    {
+        if (properties.ValueKind != JsonValueKind.Object ||
+            !properties.TryGetProperty("category_ids", out var categories) ||
+            categories.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        foreach (var category in categories.EnumerateObject())
+        {
+            var categoryName = ReadString(category.Value, "category_name");
+            if (!string.IsNullOrWhiteSpace(categoryName))
+                return categoryName;
+        }
+
+        return null;
+    }
+
+    private static string BuildPoiLabel(string name, JsonElement tags, string? locality)
+    {
+        var street = ReadString(tags, "addr:street");
+        var houseNumber = ReadString(tags, "addr:housenumber");
+        var streetAddress = string.Join(" ", new[] { houseNumber, street }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+        return string.Join(", ", new[]
+            {
+                name,
+                streetAddress,
+                ReadString(tags, "addr:suburb"),
+                locality
+            }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
     private static double ReadDouble(JsonElement element, string propertyName)
-        => element.TryGetProperty(propertyName, out var property) && property.TryGetDouble(out var value)
+        => element.ValueKind == JsonValueKind.Object &&
+           element.TryGetProperty(propertyName, out var property) &&
+           property.ValueKind == JsonValueKind.Number &&
+           property.TryGetDouble(out var value)
             ? value
             : 0;
 
