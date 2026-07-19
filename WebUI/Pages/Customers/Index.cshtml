@@ -13,6 +13,11 @@
     <a asp-page="Create" class="btn btn-primary">Add customer</a>
 </div>
 
+@if (TempData["CustomerCreated"] != null)
+{
+    <div class="alert alert-success">@TempData["CustomerCreated"]</div>
+}
+
 <div class="filter-panel mb-4">
     <form method="get" class="row g-3 align-items-end">
         <div class="col-md-9">

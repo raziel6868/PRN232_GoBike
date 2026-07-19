@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Services.Interfaces;
 
 namespace API.Controllers;
@@ -62,24 +61,6 @@ public class AuthController : ControllerBase
         return Ok(new ApiLoginResult
         {
             Message = "Login successful",
-            User = MapLoginResponse(user)
-        });
-    }
-
-    [AllowAnonymous]
-    [EnableRateLimiting("Registration")]
-    [HttpPost("register")]
-    public async Task<IActionResult> Register(
-        [FromBody] CustomerRegistrationRequest request,
-        CancellationToken cancellationToken)
-    {
-        var (user, error) = await customerAccountService.RegisterAsync(request, cancellationToken);
-        if (user == null)
-            return Conflict(new { message = error ?? "Unable to register customer account." });
-
-        return Created("/api/auth/profile", new ApiLoginResult
-        {
-            Message = "Customer account created successfully",
             User = MapLoginResponse(user)
         });
     }

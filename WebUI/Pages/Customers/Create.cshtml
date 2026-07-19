@@ -21,6 +21,16 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
+                        <label class="form-label fw-bold" for="Username">
+                            Username <span style="color: #EF4444;">*</span>
+                        </label>
+                        <input class="form-control" id="Username" asp-for="Form.Username"
+                               autocomplete="off" placeholder="Customer login username" />
+                        <span asp-validation-for="Form.Username" class="text-danger"></span>
+                        <div class="form-text">Default password: @Model.DefaultPassword</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label fw-bold" for="FullName">
                             Full Name <span style="color: #EF4444;">*</span>
                         </label>

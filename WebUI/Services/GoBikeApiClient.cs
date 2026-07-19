@@ -97,14 +97,6 @@ public class GoBikeApiClient : IGoBikeApiClient
         }
     }
 
-    public async Task<(bool Success, string? Error)> RegisterCustomerAsync(CustomerRegistrationRequest request)
-    {
-        var response = await httpClient.PostAsJsonAsync("api/auth/register", request, JsonOptions);
-        return response.IsSuccessStatusCode
-            ? (true, null)
-            : (false, await ApiResponseReader.ReadErrorMessageAsync(response));
-    }
-
     public async Task<(bool Success, UserProfileDto? Profile, string? Error)> GetProfileAsync()
     {
         var response = await httpClient.GetAsync("api/auth/profile");

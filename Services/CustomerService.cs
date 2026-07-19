@@ -1,6 +1,10 @@
 using BusinessObjects;
 using BusinessObjects.Entities;
+using BusinessObjects.Enums;
+using DataAccessObjects;
+using Microsoft.EntityFrameworkCore;
 using Repositories;
+using Services.DTOs;
 using Services.Interfaces;
 
 namespace Services;
@@ -8,10 +12,12 @@ namespace Services;
 public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository customerRepository;
+    private readonly AppDbContext context;
 
-    public CustomerService(ICustomerRepository customerRepository)
+    public CustomerService(ICustomerRepository customerRepository, AppDbContext context)
     {
         this.customerRepository = customerRepository;
+        this.context = context;
     }
 
     public Task<List<Customer>> GetAllAsync()
@@ -20,9 +26,20 @@ public class CustomerService : ICustomerService
     public Task<Customer?> GetByIdAsync(int id)
         => customerRepository.GetByIdAsync(id);
 
-    public async Task CreateAsync(Customer customer)
+    public async Task CreateAsync(Customer customer, string username)
     {
         ValidateCustomer(customer);
+
+        username = username.Trim();
+        customer.FullName = customer.FullName.Trim();
+        customer.CCCD = customer.CCCD.Trim();
+        customer.PhoneNumber = customer.PhoneNumber.Trim();
+        customer.Email = string.IsNullOrWhiteSpace(customer.Email) ? null : customer.Email.Trim();
+        customer.Address = string.IsNullOrWhiteSpace(customer.Address) ? null : customer.Address.Trim();
+        customer.DriverLicenseNo = customer.DriverLicenseNo.Trim();
+
+        if (await context.Users.AnyAsync(user => user.Username == username))
+            throw new InvalidOperationException("Username already exists in the system");
 
         if (await customerRepository.ExistsByCccdAsync(customer.CCCD))
         {
@@ -34,7 +51,34 @@ public class CustomerService : ICustomerService
             throw new InvalidOperationException("Driver license number already exists in the system");
         }
 
-        await customerRepository.AddAsync(customer);
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(CustomerCreateDto.DefaultPassword, workFactor: 11);
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            context.Customers.Add(customer);
+            await context.SaveChangesAsync();
+
+            context.Users.Add(new User
+            {
+                Username = username,
+                PasswordHash = passwordHash,
+                FullName = customer.FullName,
+                Email = customer.Email,
+                PhoneNumber = customer.PhoneNumber,
+                Role = UserRole.Customer,
+                CustomerId = customer.Id,
+                IsActive = true,
+                CreatedAt = SystemClock.Now
+            });
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            await transaction.RollbackAsync();
+            throw new InvalidOperationException("Unable to create the customer account because its identity or username already exists", ex);
+        }
     }
 
     public async Task UpdateAsync(Customer customer)
@@ -51,8 +95,30 @@ public class CustomerService : ICustomerService
             throw new InvalidOperationException("Driver license number already exists in the system");
         }
 
-        customer.UpdatedAt = SystemClock.Now;
-        customerRepository.Update(customer);
+        var existing = await context.Customers
+            .Include(candidate => candidate.User)
+            .FirstOrDefaultAsync(candidate => candidate.Id == customer.Id)
+            ?? throw new InvalidOperationException($"Customer with ID {customer.Id} not found");
+
+        existing.FullName = customer.FullName.Trim();
+        existing.CCCD = customer.CCCD.Trim();
+        existing.PhoneNumber = customer.PhoneNumber.Trim();
+        existing.Email = string.IsNullOrWhiteSpace(customer.Email) ? null : customer.Email.Trim();
+        existing.Address = string.IsNullOrWhiteSpace(customer.Address) ? null : customer.Address.Trim();
+        existing.DateOfBirth = customer.DateOfBirth.Date;
+        existing.DriverLicenseNo = customer.DriverLicenseNo.Trim();
+        existing.IsActive = customer.IsActive;
+        existing.UpdatedAt = SystemClock.Now;
+
+        if (existing.User != null)
+        {
+            existing.User.FullName = existing.FullName;
+            existing.User.Email = existing.Email;
+            existing.User.PhoneNumber = existing.PhoneNumber;
+            existing.User.UpdatedAt = SystemClock.Now;
+        }
+
+        await context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)

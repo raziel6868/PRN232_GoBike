@@ -71,8 +71,13 @@ public class CustomerController : ControllerBase
 
         try
         {
-            await customerService.CreateAsync(customer);
-            return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
+            await customerService.CreateAsync(customer, dto.Username);
+            return CreatedAtAction(nameof(GetById), new { id = customer.Id }, new
+            {
+                customer.Id,
+                Username = dto.Username.Trim(),
+                CustomerCreateDto.DefaultPassword
+            });
         }
         catch (InvalidOperationException ex)
         {

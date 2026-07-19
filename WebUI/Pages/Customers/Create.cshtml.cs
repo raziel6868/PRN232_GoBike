@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Services.DTOs;
 using WebUI.Services.Internal;
 
 namespace WebUI.Pages.Customers;
@@ -17,6 +18,8 @@ public class CreateModel : PageModel
 
     [BindProperty]
     public CustomerCreateForm Form { get; set; } = new();
+
+    public string DefaultPassword => CustomerCreateDto.DefaultPassword;
 
     public IActionResult OnGet()
     {
@@ -39,12 +42,19 @@ public class CreateModel : PageModel
             return Page();
         }
 
+        TempData["CustomerCreated"] =
+            $"Customer and login account created. Username: {Form.Username}. Default password: {CustomerCreateDto.DefaultPassword}.";
         return RedirectToPage("./Index");
     }
 }
 
 public class CustomerCreateForm
 {
+    [Required(ErrorMessage = "Username is required.")]
+    [StringLength(50, MinimumLength = 3)]
+    [RegularExpression(@"^[A-Za-z0-9._-]+$", ErrorMessage = "Username may only contain letters, numbers, dots, underscores, and hyphens.")]
+    public string Username { get; set; } = "";
+
     [Required(ErrorMessage = "Full name is required.")]
     [StringLength(100, MinimumLength = 2)]
     public string FullName { get; set; } = "";

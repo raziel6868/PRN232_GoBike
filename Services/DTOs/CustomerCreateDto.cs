@@ -4,6 +4,13 @@ namespace Services.DTOs;
 
 public class CustomerCreateDto
 {
+    public const string DefaultPassword = "12345678";
+
+    [Required]
+    [StringLength(50, MinimumLength = 3)]
+    [RegularExpression(@"^[A-Za-z0-9._-]+$", ErrorMessage = "Username may only contain letters, numbers, dots, underscores, and hyphens")]
+    public string Username { get; set; } = string.Empty;
+
     [Required]
     [MaxLength(100)]
     public string FullName { get; set; } = string.Empty;
