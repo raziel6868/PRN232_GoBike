@@ -17,6 +17,10 @@
 {
     <div class="alert alert-success">@TempData["ProfileSuccess"]</div>
 }
+@if (TempData["PasswordSuccess"] != null)
+{
+    <div class="alert alert-success">@TempData["PasswordSuccess"]</div>
+}
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
     <div class="alert alert-danger">@Model.ErrorMessage</div>
@@ -26,7 +30,7 @@
 {
     @if (Model.IsCustomer)
     {
-        <form method="post" class="content-card">
+        <form method="post" asp-page-handler="Profile" class="content-card">
             <div class="card-body p-4">
                 <div class="d-flex flex-wrap justify-content-between gap-2 mb-4">
                     <div>
@@ -79,6 +83,36 @@
             </div>
         </form>
     }
+    else if (Model.IsInternalUser)
+    {
+        <form method="post" asp-page-handler="Profile" class="content-card">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between gap-2 mb-4">
+                    <div>
+                        <div class="page-kicker">Signed in as</div>
+                        <h2 class="h5 mb-0">@Model.UserProfile.Username</h2>
+                    </div>
+                    <span class="badge bg-primary align-self-start">@Model.UserProfile.RoleName</span>
+                </div>
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="InternalForm.FullName" class="form-label">Full name</label>
+                        <input asp-for="InternalForm.FullName" class="form-control" />
+                        <span asp-validation-for="InternalForm.FullName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="InternalForm.Email" class="form-label"></label>
+                        <input asp-for="InternalForm.Email" class="form-control" autocomplete="email" />
+                        <span asp-validation-for="InternalForm.Email" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-end p-3">
+                <button type="submit" class="btn btn-primary">Save profile</button>
+            </div>
+        </form>
+    }
     else
     {
         <div class="content-card">
@@ -96,6 +130,39 @@
             </div>
         </div>
     }
+
+    <form method="post" asp-page-handler="Password" class="content-card mt-4">
+        <div class="card-body p-4">
+            <div class="mb-4">
+                <div class="page-kicker">Security</div>
+                <h2 class="h5 mb-0">Change password</h2>
+            </div>
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="PasswordForm.CurrentPassword" class="form-label">Current password</label>
+                    <input asp-for="PasswordForm.CurrentPassword" type="password" class="form-control"
+                           autocomplete="current-password" />
+                    <span asp-validation-for="PasswordForm.CurrentPassword" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="PasswordForm.NewPassword" class="form-label">New password</label>
+                    <input asp-for="PasswordForm.NewPassword" type="password" class="form-control"
+                           autocomplete="new-password" />
+                    <span asp-validation-for="PasswordForm.NewPassword" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="PasswordForm.ConfirmPassword" class="form-label">Confirm password</label>
+                    <input asp-for="PasswordForm.ConfirmPassword" type="password" class="form-control"
+                           autocomplete="new-password" />
+                    <span asp-validation-for="PasswordForm.ConfirmPassword" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end p-3">
+            <button type="submit" class="btn btn-primary">Change password</button>
+        </div>
+    </form>
 }
 
 @section Scripts {

@@ -21,14 +21,21 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(30);
         }).AddHttpMessageHandler<ApiAuthCookieHandler>();
 
-        if (environment.IsDevelopment())
+        httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() =>
         {
-            httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            var handler = new HttpClientHandler
             {
-                ServerCertificateCustomValidationCallback =
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-            });
-        }
+                UseCookies = false
+            };
+
+            if (environment.IsDevelopment())
+            {
+                handler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            }
+
+            return handler;
+        });
 
         return services;
     }

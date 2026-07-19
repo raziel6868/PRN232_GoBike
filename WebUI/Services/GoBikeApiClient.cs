@@ -118,6 +118,24 @@ public class GoBikeApiClient : IGoBikeApiClient
         return await ReadAsync<UserProfileDto>(response);
     }
 
+    public async Task<(bool Success, UserProfileDto? Profile, string? Error)> UpdateInternalProfileAsync(
+        InternalProfileUpdateRequest request)
+    {
+        var response = await httpClient.PutAsJsonAsync("api/auth/profile/internal", request, JsonOptions);
+        return await ReadAsync<UserProfileDto>(response);
+    }
+
+    public async Task<(bool Success, string? Error)> ChangePasswordAsync(ChangePasswordRequest request)
+    {
+        var response = await httpClient.PutAsJsonAsync("api/auth/profile/password", request, JsonOptions);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            return (false, "Phiên API đã hết hạn. Vui lòng đăng nhập lại.");
+
+        return response.IsSuccessStatusCode
+            ? (true, null)
+            : (false, await ApiResponseReader.ReadErrorMessageAsync(response));
+    }
+
     public async Task<(bool Success, List<UserDto>? Users, string? Error)> GetStaffUsersAsync()
     {
         var response = await httpClient.GetAsync("api/users/staff");

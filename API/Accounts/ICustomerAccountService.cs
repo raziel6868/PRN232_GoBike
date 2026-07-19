@@ -15,4 +15,14 @@ public interface ICustomerAccountService
         int userId,
         CustomerProfileUpdateRequest request,
         CancellationToken cancellationToken);
+
+    Task<(User? User, string? Error)> UpdateInternalProfileAsync(
+        int userId,
+        InternalProfileUpdateRequest request,
+        CancellationToken cancellationToken);
+
+    Task<(bool Success, string? Error)> ChangePasswordAsync(
+        int userId,
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken);
 }

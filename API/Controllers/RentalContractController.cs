@@ -156,7 +156,7 @@ public class RentalContractController : ControllerBase
         CancellationFee = x.CancellationFee,
         Status = (int)x.Status,
         StatusText = x.Status.ToString(),
-        CreatedBy = x.CreatedBy
+        CreatedBy = x.CreatedByUser?.FullName ?? x.CreatedBy
     };
 
     private static RentalContractDetailDto MapDetailDto(RentalContract rental) => new()
@@ -192,7 +192,7 @@ public class RentalContractController : ControllerBase
         StartMileage = rental.Inspections.FirstOrDefault(i => i.InspectionType == InspectionType.BeforeRental)?.Mileage,
         EndMileage = rental.Inspections.FirstOrDefault(i => i.InspectionType == InspectionType.AfterReturn)?.Mileage,
         Notes = rental.Notes,
-        CreatedBy = rental.CreatedBy,
+        CreatedBy = rental.CreatedByUser?.FullName ?? rental.CreatedBy,
         CompletedAt = rental.CompletedAt,
         CancelledAt = rental.CancelledAt,
         NoShowAt = rental.NoShowAt,

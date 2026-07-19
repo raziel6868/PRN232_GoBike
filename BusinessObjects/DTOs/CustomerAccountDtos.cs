@@ -74,3 +74,31 @@ public sealed class CustomerProfileUpdateRequest
     [MaxLength(20)]
     public string DriverLicenseNo { get; set; } = string.Empty;
 }
+
+public sealed class InternalProfileUpdateRequest
+{
+    [Required]
+    [StringLength(100, MinimumLength = 2)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(100)]
+    public string Email { get; set; } = string.Empty;
+}
+
+public sealed class ChangePasswordRequest
+{
+    [Required]
+    [MaxLength(100)]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100, MinimumLength = 8)]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
+    [Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}

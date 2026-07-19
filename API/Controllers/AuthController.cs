@@ -132,6 +132,44 @@ public class AuthController : ControllerBase
             : Ok(MapProfile(user));
     }
 
+    [Authorize(Roles = "Admin,Staff")]
+    [HttpPut("profile/internal")]
+    public async Task<IActionResult> UpdateInternalProfile(
+        [FromBody] InternalProfileUpdateRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        var (user, error) = await customerAccountService.UpdateInternalProfileAsync(
+            userId,
+            request,
+            cancellationToken);
+
+        return user == null
+            ? BadRequest(new { message = error ?? "Unable to update profile." })
+            : Ok(MapProfile(user));
+    }
+
+    [Authorize]
+    [HttpPut("profile/password")]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        var (success, error) = await customerAccountService.ChangePasswordAsync(
+            userId,
+            request,
+            cancellationToken);
+
+        return success
+            ? Ok(new { message = "Password changed successfully." })
+            : BadRequest(new { message = error ?? "Unable to change password." });
+    }
+
     private static LoginResponse MapLoginResponse(User user) => new()
     {
         Id = user.Id,

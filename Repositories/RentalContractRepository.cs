@@ -19,6 +19,7 @@ public class RentalContractRepository : Repository<RentalContract>, IRentalContr
                 .ThenInclude(m => m!.VehicleType)
             .Include(x => x.Inspections)
             .Include(x => x.Payments)
+            .Include(x => x.CreatedByUser)
             .ToListAsync();
 
     public override Task<RentalContract?> GetByIdAsync(int id)
@@ -28,6 +29,7 @@ public class RentalContractRepository : Repository<RentalContract>, IRentalContr
                 .ThenInclude(m => m!.VehicleType)
             .Include(x => x.Inspections)
             .Include(x => x.Payments)
+            .Include(x => x.CreatedByUser)
             .FirstOrDefaultAsync(x => x.Id == id);
 
     public Task<List<RentalContract>> GetByCustomerIdAsync(int customerId)
@@ -42,6 +44,7 @@ public class RentalContractRepository : Repository<RentalContract>, IRentalContr
             .Include(x => x.Customer)
             .Include(x => x.Motorcycle)
                 .ThenInclude(m => m!.VehicleType)
+            .Include(x => x.CreatedByUser)
             .AsQueryable();
 
         if (customerId.HasValue)

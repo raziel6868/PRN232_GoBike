@@ -333,6 +333,7 @@ public class RentalContractService : IRentalContractService
                 .ThenInclude(m => m!.VehicleType)
             .Include(c => c.Inspections)
             .Include(c => c.Payments)
+            .Include(c => c.CreatedByUser)
             .FirstOrDefaultAsync(c => c.Id == id);
 
     private async Task<(Customer Customer, Motorcycle Motorcycle)> LoadAndValidateContractPartiesAsync(int customerId, int motorcycleId)

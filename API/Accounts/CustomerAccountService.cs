@@ -146,6 +146,49 @@ public sealed class CustomerAccountService : ICustomerAccountService
         return (user, null);
     }
 
+    public async Task<(User? User, string? Error)> UpdateInternalProfileAsync(
+        int userId,
+        InternalProfileUpdateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var user = await context.Users
+            .FirstOrDefaultAsync(candidate => candidate.Id == userId, cancellationToken);
+
+        if (user == null || user.Role is not (UserRole.Staff or UserRole.Admin))
+            return (null, "Staff or admin profile not found.");
+
+        user.FullName = request.FullName.Trim();
+        user.Email = request.Email.Trim();
+        user.UpdatedAt = SystemClock.Now;
+
+        await context.SaveChangesAsync(cancellationToken);
+        return (user, null);
+    }
+
+    public async Task<(bool Success, string? Error)> ChangePasswordAsync(
+        int userId,
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var user = await context.Users
+            .FirstOrDefaultAsync(candidate => candidate.Id == userId, cancellationToken);
+
+        if (user == null)
+            return (false, "User not found.");
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            return (false, "Current password is incorrect.");
+
+        if (BCrypt.Net.BCrypt.Verify(request.NewPassword, user.PasswordHash))
+            return (false, "New password must be different from the current password.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 11);
+        user.UpdatedAt = SystemClock.Now;
+
+        await context.SaveChangesAsync(cancellationToken);
+        return (true, null);
+    }
+
     private static string? ValidateCustomer(DateTime dateOfBirth)
     {
         if (dateOfBirth.Date > SystemClock.Today)
