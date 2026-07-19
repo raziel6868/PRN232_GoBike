@@ -108,7 +108,23 @@ else
                             <td>@record.RepairCost.ToString("N0") VND</td>
                             <td><span class="badge @WebUI.Pages.Admin.Maintenance.IndexModel.GetStatusBadgeClass(record.Status)">@record.Status</span></td>
                             <td class="text-end">
-                                <a asp-page="/Motorcycle/Details" asp-route-id="@record.MotorcycleId" class="btn btn-sm btn-outline-primary">Motorcycle</a>
+                                <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                    @if (record.Status == MaintenanceStatus.Pending)
+                                    {
+                                        <form method="post" asp-page-handler="Start" asp-route-id="@record.Id">
+                                            <button type="submit" class="btn btn-sm btn-primary">Start maintenance</button>
+                                        </form>
+                                    }
+                                    else if (record.Status == MaintenanceStatus.InProgress)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-success btn-complete-maintenance"
+                                                data-bs-toggle="modal" data-bs-target="#completeMaintenanceModal"
+                                                data-id="@record.Id" data-plate="@record.MotorcycleLicensePlate">
+                                            Complete
+                                        </button>
+                                    }
+                                    <a asp-page="/Motorcycle/Details" asp-route-id="@record.MotorcycleId" class="btn btn-sm btn-outline-primary">Motorcycle</a>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -123,18 +139,18 @@ else
     <nav class="mt-4" aria-label="Maintenance record pages">
         <ul class="pagination justify-content-center">
             <li class="page-item @(Model.Result.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber - 1)"
+                <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber - 1)"
                    asp-route-motorcycleId="@Model.MotorcycleId" asp-route-status="@Model.Status">Previous</a>
             </li>
             @for (var pageIndex = 1; pageIndex <= Model.Result.TotalPages; pageIndex++)
             {
                 <li class="page-item @(pageIndex == Model.PageNumber ? "active" : "")">
-                    <a class="page-link" asp-page="./Index" asp-route-page="@pageIndex"
+                    <a class="page-link" asp-page="./Index" asp-route-pageNumber="@pageIndex"
                        asp-route-motorcycleId="@Model.MotorcycleId" asp-route-status="@Model.Status">@pageIndex</a>
                 </li>
             }
             <li class="page-item @(Model.Result.HasNextPage ? "" : "disabled")">
-                <a class="page-link" asp-page="./Index" asp-route-page="@(Model.PageNumber + 1)"
+                <a class="page-link" asp-page="./Index" asp-route-pageNumber="@(Model.PageNumber + 1)"
                    asp-route-motorcycleId="@Model.MotorcycleId" asp-route-status="@Model.Status">Next</a>
             </li>
         </ul>
@@ -196,3 +212,37 @@ else
         </form>
     </div>
 </div>
+
+<div class="modal fade" id="completeMaintenanceModal" tabindex="-1" aria-labelledby="completeMaintenanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" asp-page-handler="Complete" class="modal-content">
+            <input type="hidden" name="id" id="completeMaintenanceId" />
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="completeMaintenanceModalLabel">Complete Maintenance</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Mark maintenance for <strong id="completeMaintenancePlate"></strong> as completed.</p>
+                <label class="form-label" for="completeEndDate">Completion date</label>
+                <input class="form-control" id="completeEndDate" name="endDate" type="date"
+                       value="@SystemClock.Today.ToString("yyyy-MM-dd")" required />
+                <div class="form-text">The motorcycle becomes available when it has no other open maintenance work.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-success">Complete maintenance</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.querySelectorAll('.btn-complete-maintenance').forEach(button => {
+        button.addEventListener('click', function () {
+            document.getElementById('completeMaintenanceId').value = this.dataset.id;
+            document.getElementById('completeMaintenancePlate').textContent = this.dataset.plate;
+        });
+    });
+</script>
+}

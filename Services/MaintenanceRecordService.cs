@@ -143,12 +143,34 @@ public class MaintenanceRecordService : IMaintenanceRecordService
         return MapToDto(record);
     }
 
+    public async Task<MaintenanceRecordDto> StartAsync(int id, int? userId)
+    {
+        var record = await LoadRecordAsync(id);
+        if (record.Status != MaintenanceStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending maintenance records can be started.");
+        }
+
+        record.Status = MaintenanceStatus.InProgress;
+        record.UpdatedByUserId = userId;
+        record.UpdatedAt = SystemClock.Now;
+
+        if (record.Motorcycle != null)
+        {
+            record.Motorcycle.Status = MotorcycleStatus.Maintenance;
+            record.Motorcycle.UpdatedAt = SystemClock.Now;
+        }
+
+        await context.SaveChangesAsync();
+        return MapToDto(record);
+    }
+
     public async Task<MaintenanceRecordDto> CompleteAsync(int id, MaintenanceCompleteDto dto, int? userId)
     {
         var record = await LoadRecordAsync(id);
-        if (record.Status == MaintenanceStatus.Cancelled)
+        if (record.Status != MaintenanceStatus.InProgress)
         {
-            throw new InvalidOperationException("Cannot complete a cancelled maintenance record.");
+            throw new InvalidOperationException("Only in-progress maintenance records can be completed.");
         }
 
         var endDate = dto.EndDate?.Date ?? SystemClock.Today;

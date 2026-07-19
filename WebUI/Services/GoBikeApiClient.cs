@@ -253,6 +253,23 @@ public class GoBikeApiClient : IGoBikeApiClient
         return await ReadAsync<MaintenanceRecordDto>(response);
     }
 
+    public async Task<(bool Success, MaintenanceRecordDto? Record, string? Error)> StartMaintenanceRecordAsync(int id)
+    {
+        var response = await httpClient.PatchAsync($"api/maintenance-records/{id}/start", null);
+        return await ReadAsync<MaintenanceRecordDto>(response);
+    }
+
+    public async Task<(bool Success, MaintenanceRecordDto? Record, string? Error)> CompleteMaintenanceRecordAsync(
+        int id,
+        DateTime? endDate)
+    {
+        var response = await httpClient.PatchAsJsonAsync(
+            $"api/maintenance-records/{id}/complete",
+            new MaintenanceCompleteDto { EndDate = endDate },
+            JsonOptions);
+        return await ReadAsync<MaintenanceRecordDto>(response);
+    }
+
     public async Task<(bool Success, List<PlaceSuggestionDto>? Places, string? Error)> SearchPlacesAsync(string query)
     {
         try

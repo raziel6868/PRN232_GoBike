@@ -29,7 +29,7 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public MaintenanceStatus? Status { get; set; }
 
-    [BindProperty(SupportsGet = true, Name = "page")]
+    [BindProperty(SupportsGet = true, Name = "pageNumber")]
     public int PageNumber { get; set; } = 1;
 
     public async Task<IActionResult> OnGetAsync()
@@ -53,7 +53,15 @@ public class IndexModel : PageModel
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Please provide a motorcycle, reason, valid repair cost, and start date.";
+            var validationErrors = ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .SelectMany(entry => entry.Value!.Errors.Select(error =>
+                    $"{entry.Key}: {error.ErrorMessage ?? error.Exception?.Message}"))
+                .ToList();
+
+            TempData["Error"] = validationErrors.Count > 0
+                ? string.Join(" ", validationErrors)
+                : "Please provide a motorcycle, reason, valid repair cost, and start date.";
             return RedirectToPage();
         }
 
@@ -65,6 +73,34 @@ public class IndexModel : PageModel
         TempData[success ? "Success" : "Error"] = success
             ? "Maintenance record created. The motorcycle is now marked for maintenance."
             : error ?? "Failed to create maintenance record.";
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostStartAsync(int id)
+    {
+        var (success, _, error) = await apiClient.StartMaintenanceRecordAsync(id);
+        var redirect = await ApiPageHelper.HandleApiAuthFailureAsync(this, error, apiClient);
+        if (redirect != null)
+            return redirect;
+
+        TempData[success ? "Success" : "Error"] = success
+            ? "Maintenance is now in progress."
+            : error ?? "Failed to start maintenance.";
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostCompleteAsync(int id, DateTime? endDate)
+    {
+        var (success, _, error) = await apiClient.CompleteMaintenanceRecordAsync(id, endDate);
+        var redirect = await ApiPageHelper.HandleApiAuthFailureAsync(this, error, apiClient);
+        if (redirect != null)
+            return redirect;
+
+        TempData[success ? "Success" : "Error"] = success
+            ? "Maintenance completed. The motorcycle is available when no other maintenance work is open."
+            : error ?? "Failed to complete maintenance.";
 
         return RedirectToPage();
     }

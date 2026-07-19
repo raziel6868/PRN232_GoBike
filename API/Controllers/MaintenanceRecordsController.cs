@@ -82,6 +82,25 @@ public class MaintenanceRecordsController : ControllerBase
     }
 
     [Authorize(Roles = "Admin")]
+    [HttpPatch("{id}/start")]
+    public async Task<IActionResult> Start(int id)
+    {
+        try
+        {
+            var record = await service.StartAsync(id, GetCurrentUserId());
+            return Ok(record);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [Authorize(Roles = "Admin")]
     [HttpPatch("{id}/complete")]
     public async Task<IActionResult> Complete(int id, [FromBody] MaintenanceCompleteDto dto)
     {
