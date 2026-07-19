@@ -20,6 +20,8 @@ public interface IGoBikeApiClient
     Task<(bool Success, UserDto? User, string? Error)> UpdateStaffUserAsync(int id, UpdateStaffUserRequest request);
     Task<(bool Success, string? Error)> DeleteStaffUserAsync(int id);
 
+    Task<(bool Success, List<MyRentalContractDto>? Contracts, string? Error)> GetMyRentalContractsAsync();
+
     Task<(bool Success, PaginatedResult<MotorcycleDto>? Result, string? Error)> GetMotorcyclesAsync(
         string? search,
         MotorcycleStatus? status,

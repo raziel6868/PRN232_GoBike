@@ -1,0 +1,52 @@
+@model IReadOnlyList<global::Services.DTOs.MyRentalContractDto>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Contract</th>
+                    <th>Motorcycle</th>
+                    <th>Rental period</th>
+                    <th>Deposit</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var contract in Model)
+                {
+                    var amount = contract.Status == (int)BusinessObjects.Enums.RentalStatus.Completed
+                        ? contract.FinalAmount
+                        : contract.TotalAmount;
+                    <tr>
+                        <td>
+                            <strong>#@contract.Id</strong>
+                            <div class="small text-muted">Created @contract.CreatedAt.ToString("dd/MM/yyyy")</div>
+                        </td>
+                        <td>
+                            <strong>@contract.MotorcycleLicensePlate</strong>
+                            <div class="small text-muted">@contract.MotorcycleName</div>
+                        </td>
+                        <td class="rental-period">
+                            @contract.RentalDate.ToString("dd/MM/yyyy")
+                            <span class="text-muted">to</span>
+                            @contract.ExpectedReturnDate.ToString("dd/MM/yyyy")
+                            @if (contract.ActualReturnDate.HasValue)
+                            {
+                                <div class="small text-muted">Returned @contract.ActualReturnDate.Value.ToString("dd/MM/yyyy")</div>
+                            }
+                        </td>
+                        <td>@contract.DepositAmount.ToString("N0") VND</td>
+                        <td>@amount.ToString("N0") VND</td>
+                        <td>
+                            <span class="badge @WebUI.Pages.MyRentals.IndexModel.GetStatusBadgeClass(contract.Status)">
+                                @WebUI.Pages.MyRentals.IndexModel.GetStatusName(contract.Status)
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

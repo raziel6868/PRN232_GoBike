@@ -223,6 +223,12 @@ public class GoBikeApiClient : IGoBikeApiClient
         return await ReadAsync<List<MotorcycleTypeDto>>(response);
     }
 
+    public async Task<(bool Success, List<MyRentalContractDto>? Contracts, string? Error)> GetMyRentalContractsAsync()
+    {
+        var response = await httpClient.GetAsync("api/my-rental-contracts");
+        return await ReadAsync<List<MyRentalContractDto>>(response);
+    }
+
     public async Task<(bool Success, PaginatedResult<MaintenanceRecordDto>? Result, string? Error)> GetMaintenanceRecordsAsync(
         int? motorcycleId,
         MaintenanceStatus? status,

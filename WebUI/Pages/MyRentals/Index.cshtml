@@ -1,0 +1,129 @@
+@page
+@model WebUI.Pages.MyRentals.IndexModel
+@{
+    ViewData["Title"] = "My rentals";
+}
+
+<div class="page-heading">
+    <div>
+        <div class="page-kicker">My account</div>
+        <h1>My Rental Contracts</h1>
+        <p class="page-subtitle">Follow your current rental status and review completed contracts.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="rental-summary">
+            <span>Current</span>
+            <strong>@Model.CurrentRentals.Count</strong>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="rental-summary">
+            <span>History</span>
+            <strong>@Model.RentalHistory.Count</strong>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="rental-summary">
+            <span>Total contracts</span>
+            <strong>@(Model.CurrentRentals.Count + Model.RentalHistory.Count)</strong>
+        </div>
+    </div>
+</div>
+
+<section class="mb-5" aria-labelledby="current-rentals-heading">
+    <div class="section-heading">
+        <div>
+            <h2 id="current-rentals-heading">Current rentals</h2>
+            <p>Reservations and motorcycles currently in use.</p>
+        </div>
+    </div>
+
+    @if (Model.CurrentRentals.Count == 0)
+    {
+        <div class="empty-state compact">
+            <strong>No current rental.</strong>
+            <div>Your reserved or active contracts will appear here.</div>
+        </div>
+    }
+    else
+    {
+        <partial name="_RentalContractTable" model="Model.CurrentRentals" />
+    }
+</section>
+
+<section aria-labelledby="rental-history-heading">
+    <div class="section-heading">
+        <div>
+            <h2 id="rental-history-heading">Rental history</h2>
+            <p>Completed, cancelled, and no-show contracts.</p>
+        </div>
+    </div>
+
+    @if (Model.RentalHistory.Count == 0)
+    {
+        <div class="empty-state compact">
+            <strong>No rental history yet.</strong>
+            <div>Finished contracts will remain available here.</div>
+        </div>
+    }
+    else
+    {
+        <partial name="_RentalContractTable" model="Model.RentalHistory" />
+    }
+</section>
+
+@section Styles {
+<style>
+    .rental-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 72px;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--gb-border);
+        border-radius: 8px;
+        background: var(--gb-surface);
+    }
+
+    .rental-summary span {
+        color: var(--gb-muted);
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .rental-summary strong {
+        font-size: 1.5rem;
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 0.8rem;
+    }
+
+    .section-heading h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 800;
+    }
+
+    .section-heading p {
+        margin: 0.18rem 0 0;
+        color: var(--gb-muted);
+        font-size: 0.9rem;
+    }
+
+    .rental-period {
+        white-space: nowrap;
+    }
+</style>
+}

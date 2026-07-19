@@ -54,6 +54,12 @@
                             <li class="nav-item">
                                 <a class="nav-link @(currentPath.StartsWith("/routes") ? "active" : "")" href="/Routes">Route Planner</a>
                             </li>
+                            @if (isCustomer)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(currentPath.StartsWith("/myrentals") ? "active" : "")" href="/MyRentals">My rentals</a>
+                                </li>
+                            }
                             @if (isAdmin)
                             {
                                 <li class="nav-item">
