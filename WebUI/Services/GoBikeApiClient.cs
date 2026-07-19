@@ -36,14 +36,10 @@ public class GoBikeApiClient : IGoBikeApiClient
     {
         cookieAccessor.Clear();
 
-        var baseUri = new Uri(apiSettings.BaseUrl.TrimEnd('/') + "/");
-        var handler = new HttpClientHandler { UseCookies = true, CookieContainer = new CookieContainer() };
-        using var loginClient = new HttpClient(handler) { BaseAddress = baseUri };
-
         HttpResponseMessage response;
         try
         {
-            response = await loginClient.PostAsJsonAsync("api/auth/login", request, JsonOptions);
+            response = await httpClient.PostAsJsonAsync("api/auth/login", request, JsonOptions);
         }
         catch (HttpRequestException)
         {
@@ -57,18 +53,35 @@ public class GoBikeApiClient : IGoBikeApiClient
         if (!response.IsSuccessStatusCode)
             return (false, null, await ApiResponseReader.ReadErrorMessageAsync(response));
 
-        var cookies = handler.CookieContainer.GetCookies(baseUri);
-        if (cookies.Count > 0)
-        {
-            var cookieHeader = string.Join("; ", cookies.Cast<Cookie>().Select(c => $"{c.Name}={c.Value}"));
-            cookieAccessor.SetCookieHeader(cookieHeader);
-        }
+        var cookieHeader = ReadResponseCookieHeader(response);
+        if (string.IsNullOrWhiteSpace(cookieHeader))
+            return (false, null, "API login succeeded but did not return an authentication cookie.");
+
+        cookieAccessor.SetCookieHeader(cookieHeader);
 
         var result = await response.Content.ReadFromJsonAsync<ApiLoginResult>(JsonOptions);
         if (result?.User == null)
             return (false, null, "Invalid response from API");
 
         return (true, result.User, null);
+    }
+
+    private static string? ReadResponseCookieHeader(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("Set-Cookie", out var setCookieHeaders))
+            return null;
+
+        var cookiePairs = setCookieHeaders
+            .Select(header => header.Split(';', 2)[0].Trim())
+            .Where(cookie =>
+            {
+                var separatorIndex = cookie.IndexOf('=');
+                return separatorIndex > 0 && separatorIndex < cookie.Length - 1;
+            })
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        return cookiePairs.Length == 0 ? null : string.Join("; ", cookiePairs);
     }
 
     public async Task LogoutAsync()
