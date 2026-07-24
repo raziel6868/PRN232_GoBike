@@ -12,6 +12,8 @@
 <div class="card">
     <div class="card-body">
         <form method="post" novalidate>
+            <input type="hidden" asp-for="Form.Id" />
+            <input type="hidden" asp-for="Form.IsActive" />
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
             <div class="row">
@@ -28,8 +30,8 @@
                         <label class="form-label fw-bold" for="Cccd">
                             CCCD <span style="color: #EF4444;">*</span>
                         </label>
-                        <input class="form-control" id="Cccd" asp-for="Form.Cccd" />
-                        <span asp-validation-for="Form.Cccd" class="text-danger"></span>
+                        <input class="form-control" id="Cccd" asp-for="Form.CCCD" />
+                        <span asp-validation-for="Form.CCCD" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
@@ -44,7 +46,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label fw-bold" for="Email">
-                            Email <span style="color: #EF4444;">*</span>
+                            Email
                         </label>
                         <input class="form-control" id="Email" type="email" asp-for="Form.Email" />
                         <span asp-validation-for="Form.Email" class="text-danger"></span>

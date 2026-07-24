@@ -1,0 +1,11 @@
+.git
+.github
+.vs
+.agents
+**/bin
+**/obj
+**/*.user
+**/*.log
+.env
+docker-compose.override.yml
+README.Docker.md

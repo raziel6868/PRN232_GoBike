@@ -1,8 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Services.DTOs;
 using WebUI.Services.Internal;
 
 namespace WebUI.Pages.Customers;
@@ -17,9 +17,7 @@ public class EditModel : PageModel
     }
 
     [BindProperty]
-    public CustomerCreateForm Form { get; set; } = new();
-
-    public int CustomerId { get; set; }
+    public CustomerUpdateDto Form { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -32,31 +30,25 @@ public class EditModel : PageModel
         }
 
         var json = await response.Content.ReadAsStringAsync();
-        var customer = JsonSerializer.Deserialize<CustomerDetail>(json,
+        var customer = JsonSerializer.Deserialize<CustomerUpdateDto>(json,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         if (customer == null) return NotFound();
 
-        CustomerId = customer.Id;
-        Form = new CustomerCreateForm
-        {
-            FullName = customer.FullName,
-            Cccd = customer.Cccd,
-            PhoneNumber = customer.PhoneNumber,
-            Email = customer.Email,
-            Address = customer.Address,
-            DateOfBirth = customer.DateOfBirth,
-            DriverLicenseNo = customer.DriverLicenseNo
-        };
+        Form = customer;
 
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
+        if (id <= 0 || Form.Id != id)
+        {
+            return BadRequest();
+        }
+
         if (!ModelState.IsValid)
         {
-            CustomerId = id;
             return Page();
         }
 
@@ -66,7 +58,6 @@ public class EditModel : PageModel
         if (!response.IsSuccessStatusCode)
         {
             ModelState.AddModelError(string.Empty, await ApiResponseReader.ReadErrorMessageAsync(response));
-            CustomerId = id;
             return Page();
         }
 

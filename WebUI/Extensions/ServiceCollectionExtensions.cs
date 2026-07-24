@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
         {
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiSettings>>().Value;
             client.BaseAddress = new Uri(settings.BaseUrl.TrimEnd('/') + "/");
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(Math.Clamp(settings.TimeoutSeconds, 10, 300));
         }).AddHttpMessageHandler<ApiAuthCookieHandler>();
 
         httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() =>
